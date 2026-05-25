@@ -1,0 +1,6 @@
+{
+  "name": "أغاني جورج وسوف",
+  "description": "تطبيق كامل لأغاني سلطان الطرب جورج وسوف (أبو وديع) مع الكلمات ومجلس الوديات ومشغل موسيقي تفاعلي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
