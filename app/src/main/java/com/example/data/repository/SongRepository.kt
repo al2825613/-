@@ -40,11 +40,11 @@ class SongRepository(private val songDao: SongDao) {
             for (i in 0 until jsonArray.length()) {
                 val jsonObject = jsonArray.getJSONObject(i)
                 val title = jsonObject.getString("title")
-                val englishTitle = jsonObject.getString("englishTitle")
-                val album = jsonObject.getString("album")
-                val year = jsonObject.getString("year")
-                val duration = jsonObject.getInt("duration")
-                val category = jsonObject.getString("category")
+                val englishTitle = jsonObject.optString("englishTitle", "")
+                val album = jsonObject.optString("album", "روائع أبو وديع")
+                val year = jsonObject.optString("year", "N/A")
+                val duration = jsonObject.optInt("duration", 240)
+                val category = jsonObject.optString("category", "طرب")
                 
                 val audioUrl = jsonObject.optString("audioUrl", "")
                 val imageUrl = jsonObject.optString("imageUrl", "")
@@ -53,12 +53,16 @@ class SongRepository(private val songDao: SongDao) {
                 var lyrics = jsonObject.optString("lyrics", "")
                 
                 // Scan local lyrics files dynamically inside assets/lyrics
-                val potentialFileNames = listOf(
-                    "lyrics/${englishTitle.replace(" ", "_").lowercase()}.txt",
-                    "lyrics/${englishTitle.replace(" ", "").lowercase()}.txt",
-                    "lyrics/$englishTitle.txt",
-                    "lyrics/$title.txt"
-                )
+                val potentialFileNames = if (englishTitle.isNotEmpty()) {
+                    listOf(
+                        "lyrics/${englishTitle.replace(" ", "_").lowercase()}.txt",
+                        "lyrics/${englishTitle.replace(" ", "").lowercase()}.txt",
+                        "lyrics/$englishTitle.txt",
+                        "lyrics/$title.txt"
+                    )
+                } else {
+                    listOf("lyrics/$title.txt")
+                }
                 
                 for (fileName in potentialFileNames) {
                     try {
@@ -77,7 +81,7 @@ class SongRepository(private val songDao: SongDao) {
                 
                 // Retain current favorite status and stats of existing tracks
                 val existing = dbSongs.find { 
-                    it.title == title || it.englishTitle.equals(englishTitle, ignoreCase = true) 
+                    it.title == title || (englishTitle.isNotEmpty() && it.englishTitle.equals(englishTitle, ignoreCase = true)) 
                 }
                 
                 val song = Song(
@@ -107,7 +111,7 @@ class SongRepository(private val songDao: SongDao) {
             // Sync deletions: remove tracks from Database that are no longer part of public JSON catalog
             for (dbSong in dbSongs) {
                 val stillExists = parsedSongs.any { 
-                    it.title == dbSong.title || it.englishTitle.equals(dbSong.englishTitle, ignoreCase = true) 
+                    it.title == dbSong.title || (dbSong.englishTitle.isNotEmpty() && it.englishTitle.equals(dbSong.englishTitle, ignoreCase = true)) 
                 }
                 if (!stillExists) {
                     songDao.deleteSong(dbSong)
