@@ -1,6 +1,7 @@
 package com.example.ui.player
 
 import android.content.Context
+import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -17,7 +18,18 @@ import kotlin.math.sin
 
 class AudioPlayerManager(private val context: Context) {
 
-    private val playerContext = context
+    companion object {
+        var instance: AudioPlayerManager? = null
+    }
+
+    var onNextCallback: (() -> Unit)? = null
+    var onPreviousCallback: (() -> Unit)? = null
+
+    private val playerContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        context.createAttributionContext("audiotag")
+    } else {
+        context
+    }
 
     private var mediaPlayer: MediaPlayer? = null
     
@@ -57,6 +69,7 @@ class AudioPlayerManager(private val context: Context) {
     private var mixerJob: Job? = null
 
     init {
+        instance = this
         startProgressTracker()
     }
 
@@ -75,6 +88,7 @@ class AudioPlayerManager(private val context: Context) {
 
         if (_playbackMode.value == PlaybackMode.SYNTH) {
             playSynthesizedMelody(song)
+            updateNotification()
             return
         }
 
@@ -91,6 +105,7 @@ class AudioPlayerManager(private val context: Context) {
                     mp.start()
                     _isPlaying.value = true
                     _duration.value = (mp.duration / 1000)
+                    updateNotification()
                 }
                 setOnCompletionListener {
                     _isPlaying.value = false
@@ -123,6 +138,7 @@ class AudioPlayerManager(private val context: Context) {
                 }
             }
         }
+        updateNotification()
     }
 
     fun resume() {
@@ -135,6 +151,7 @@ class AudioPlayerManager(private val context: Context) {
                 _isPlaying.value = true
             } ?: play(song)
         }
+        updateNotification()
     }
 
     fun stop() {
@@ -173,6 +190,7 @@ class AudioPlayerManager(private val context: Context) {
         synthJob = null
 
         _isPlaying.value = false
+        stopNotificationService()
     }
 
     private fun startProgressTracker() {
@@ -231,12 +249,15 @@ class AudioPlayerManager(private val context: Context) {
                     .setSampleRate(sampleRate)
                     .build()
                 
-                audioTrack = AudioTrack.Builder()
+                val trackBuilder = AudioTrack.Builder()
                     .setAudioAttributes(audioAttributes)
                     .setAudioFormat(audioFormat)
                     .setBufferSizeInBytes(minBufferSize.coerceAtLeast(8192))
                     .setTransferMode(AudioTrack.MODE_STREAM)
-                    .build()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    trackBuilder.setContext(playerContext)
+                }
+                audioTrack = trackBuilder.build()
                 
                 audioTrack.play()
                 
@@ -338,12 +359,15 @@ class AudioPlayerManager(private val context: Context) {
                 .setSampleRate(sampleRate)
                 .build()
             
-            track = AudioTrack.Builder()
+            val trackBuilder = AudioTrack.Builder()
                 .setAudioAttributes(audioAttributes)
                 .setAudioFormat(audioFormat)
                 .setBufferSizeInBytes(minBufferSize.coerceAtLeast(bufferSize * 2))
                 .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                trackBuilder.setContext(playerContext)
+            }
+            track = trackBuilder.build()
             
             track.play()
             
@@ -414,5 +438,37 @@ class AudioPlayerManager(private val context: Context) {
             activePlucks.clear()
         }
         playerScope.cancel()
+    }
+
+    private fun updateNotification() {
+        val song = _currentSong.value ?: return
+        val isPlayingValue = _isPlaying.value
+        try {
+            val intent = Intent(context, MusicService::class.java).apply {
+                action = MusicService.ACTION_START
+                putExtra(MusicService.EXTRA_SONG_TITLE, song.title)
+                putExtra(MusicService.EXTRA_ALBUM_TITLE, song.album)
+                putExtra(MusicService.EXTRA_IS_PLAYING, isPlayingValue)
+                putExtra(MusicService.EXTRA_IMAGE_URL, song.imageUrl)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlayerManager", "Failed to update MusicService: ${e.message}")
+        }
+    }
+
+    private fun stopNotificationService() {
+        try {
+            val intent = Intent(context, MusicService::class.java).apply {
+                action = MusicService.ACTION_STOP
+            }
+            context.stopService(intent)
+        } catch (e: Exception) {
+            Log.e("AudioPlayerManager", "Failed to stop MusicService: ${e.message}")
+        }
     }
 }

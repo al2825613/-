@@ -45,6 +45,9 @@ class WassoufViewModel(application: Application) : AndroidViewModel(application)
         val database = WassoufDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
         playerManager = AudioPlayerManager(application)
+        
+        playerManager.onNextCallback = { slideNext(songsList.value) }
+        playerManager.onPreviousCallback = { slidePrevious(songsList.value) }
 
         viewModelScope.launch {
             // Prepopulate Room DB with our beautiful tracklist

@@ -105,17 +105,6 @@ fun MainScreen(viewModel: WassoufViewModel) {
                         )
                     )
                     NavigationBarItem(
-                        selected = activeTab == "oud",
-                        onClick = { viewModel.setActiveTab("oud") },
-                        label = { Text("عزف عود", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
-                        icon = { Icon(Icons.Filled.Piano, contentDescription = "آلة العود") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.tertiary
-                        )
-                    )
-                    NavigationBarItem(
                         selected = activeTab == "quotes",
                         onClick = { viewModel.setActiveTab("quotes") },
                         label = { Text("ملك الطرب", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
@@ -152,6 +141,7 @@ fun MainScreen(viewModel: WassoufViewModel) {
                 // Majestic Royal Header
                 HeaderSection(
                     quote = currentQuote,
+                    showQuote = activeTab != "songs",
                     onQuoteTap = { viewModel.refreshQuote() }
                 )
 
@@ -179,11 +169,6 @@ fun MainScreen(viewModel: WassoufViewModel) {
                             isPlaying = isPlaying,
                             songs = songsList,
                             onSongSelect = { viewModel.playSong(it) }
-                        )
-                    }
-                    "oud" -> {
-                        VirtualOudContent(
-                            onPluckString = { hz -> viewModel.playOudNote(hz) }
                         )
                     }
                     "quotes" -> {
@@ -231,7 +216,7 @@ fun MainScreen(viewModel: WassoufViewModel) {
 }
 
 @Composable
-fun HeaderSection(quote: String, onQuoteTap: () -> Unit) {
+fun HeaderSection(quote: String, showQuote: Boolean, onQuoteTap: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -277,53 +262,55 @@ fun HeaderSection(quote: String, onQuoteTap: () -> Unit) {
             modifier = Modifier.padding(top = 4.dp)
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        if (showQuote) {
+            Spacer(modifier = Modifier.height(10.dp))
 
-        // Interacting wisdom quotes card
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                .clickable { onQuoteTap() }
-                .shadow(4.dp, RoundedCornerShape(12.dp))
-        ) {
-            Column(
+            // Interacting wisdom quotes card
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                ),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                    .clickable { onQuoteTap() }
+                    .shadow(4.dp, RoundedCornerShape(12.dp))
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        Icons.Filled.FormatQuote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.FormatQuote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "حِكمة أبو وديع (اضغط للتغيير)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Text(
-                        text = "حِكمة أبو وديع (اضغط للتغيير)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        text = quote,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 18.sp
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
-                Text(
-                    text = quote,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 18.sp
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
         }
     }
@@ -343,47 +330,80 @@ fun SongsTabContent(
     onSelectCategory: (String?) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Mood Categories filters
-        val categories = listOf("الكل", "طرب", "شجن", "كلاسيكيات")
-        Row(
+        // Horizontally Scrollable list of George Wassouf Albums
+        Text(
+            text = "تصفح ألبومات أبو وديع",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+        )
+        
+        val albums = listOf(
+            Pair("الكل", "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=300"),
+            Pair("كلام الناس", "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300"),
+            Pair("طبيب جراح", "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300"),
+            Pair("سلف ودين", "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300"),
+            Pair("الهوى سلطان", "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300"),
+            Pair("لسه الدنيا بخير", "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300"),
+            Pair("روائع وسنجلات", "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300")
+        )
+
+        var selectedAlbum by remember { mutableStateOf<String?>(null) }
+
+        androidx.compose.foundation.lazy.LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            categories.forEach { cat ->
-                val isSelected = (cat == "الكل" && selectedCategory == null) || (cat == selectedCategory)
-                Box(
+            items(albums) { (albumName, albumCover) ->
+                val isSelected = (albumName == "الكل" && selectedAlbum == null) || (selectedAlbum == albumName)
+                Card(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surface
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                        .width(105.dp)
                         .clickable {
-                            if (cat == "الكل") onSelectCategory(null) else onSelectCategory(cat)
+                            selectedAlbum = if (albumName == "الكل") null else albumName
                         }
-                        .padding(vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = cat,
-                        color = if (isSelected) Color.Black else Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        .border(
+                            width = if (isSelected) 2.dp else 0.5.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(10.dp)
+                        ),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
                     )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AsyncImage(
+                            model = albumCover,
+                            contentDescription = albumName,
+                            modifier = Modifier
+                                .size(65.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.DarkGray),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = albumName,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Favorite Toggle Indicator
         var showOnlyFavorites by remember { mutableStateOf(false) }
@@ -426,10 +446,16 @@ fun SongsTabContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        val displaySongs = if (showOnlyFavorites) {
-            songs.filter { it.isFavorite }
+        val albumFilteredSongs = if (selectedAlbum != null) {
+            songs.filter { it.album == selectedAlbum }
         } else {
             songs
+        }
+
+        val displaySongs = if (showOnlyFavorites) {
+            albumFilteredSongs.filter { it.isFavorite }
+        } else {
+            albumFilteredSongs
         }
 
         if (displaySongs.isEmpty()) {
@@ -517,7 +543,7 @@ fun SongItemCard(
                     .background(Color.DarkGray)
             ) {
                 AsyncImage(
-                    model = R.drawable.img_george_wassouf,
+                    model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -1069,7 +1095,7 @@ fun MiniPlayer(
                         .rotate(if (isPlaying) rotationAngle else 0f)
                 ) {
                     AsyncImage(
-                        model = R.drawable.img_george_wassouf,
+                        model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -1224,7 +1250,7 @@ fun FullScreenPlayer(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = R.drawable.img_george_wassouf,
+                    model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()

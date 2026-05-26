@@ -79,7 +79,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "صابر وراضي",
                     englishTitle = "Saber W Rady",
-                    album = "صابر وراضي",
+                    album = "سلف ودين",
                     year = "2003",
                     lyrics = """صابر وراضي ع اللي جرالي
 وبقول ده نصيب ومكتوب ع الجبين
@@ -139,7 +139,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "خسرت كل الناس",
                     englishTitle = "Khesert Kol El Nass",
-                    album = "خسرت كل الناس",
+                    album = "روائع وسنجلات",
                     year = "2005",
                     lyrics = """خسرت كل الناس علشان أراضيك
 ومشيت وياك في سكة ضاع عمري فيها
@@ -196,7 +196,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "لو نويت",
                     englishTitle = "Law Nawayt",
-                    album = "سينغل",
+                    album = "روائع وسنجلات",
                     year = "1997",
                     lyrics = """لو نويت تنسى اللي فات والضماير بيننا ماتت
 فريّحني وقولهالي بلاش تخلّي الشك يطوّل
@@ -213,7 +213,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "حبيبي كده",
                     englishTitle = "Habibi Keda",
-                    album = "حبيبي كده",
+                    album = "طبيب جراح",
                     year = "2001",
                     lyrics = """حبيبي كده.. وهوايا كده.. وراضية أنا بيه لو حتى عذاب
 روحي معاه.. وهوايا هواه.. وفي حبه العمر يهون لو غاب
@@ -230,7 +230,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "روحي يا نسمة",
                     englishTitle = "Rouhi Ya Nasma",
-                    album = "روح الروح",
+                    album = "روائع وسنجلات",
                     year = "1988",
                     lyrics = """روحي يا نسمة روحي للي بحبه قولي له
 أنا ع البعد صابر وراضي وباقي على عهده ومواويله
@@ -247,7 +247,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "حد ينسى قلبه",
                     englishTitle = "Had Yensa Qalbo",
-                    album = "حد ينسى قلبه",
+                    album = "روائع وسنجلات",
                     year = "2008",
                     lyrics = """حد ينسى قلبه يا حبيبي ويمشي في سكة ضياع
 أنا وعيونك عشنا المحبة وكان الهوى من غير وداع
@@ -264,7 +264,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "يوم الوداع",
                     englishTitle = "Youm El Wada'",
-                    album = "حرمت الحب",
+                    album = "روائع وسنجلات",
                     year = "1996",
                     lyrics = """يوم الوداع انحرمت النوم وعشت بغرابة ومظلوم
 والصبر فارق جراحي وسال فجأة المكتوب
@@ -281,7 +281,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "شي غريب",
                     englishTitle = "Shee Ghareeb",
-                    album = "شي غريب",
+                    album = "روائع وسنجلات",
                     year = "1990",
                     lyrics = """شي غريب والله غريب الحب في العالم مسافات
 ناس تندم وناس تفرح وناس تعيش ع الذكريات
@@ -298,7 +298,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "بتعتب عليّ",
                     englishTitle = "Bte'teb Alaya",
-                    album = "شي غريب",
+                    album = "روائع وسنجلات",
                     year = "1990",
                     lyrics = """بتعتب عليّ البعد وجرح الشوق والظنون
 وأنت اللي بعت الحب وهجرت أوفى العيون
@@ -315,7 +315,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "انت غيرهم",
                     englishTitle = "Enta Gheyrohom",
-                    album = "انت غيرهم",
+                    album = "روائع وسنجلات",
                     year = "2002",
                     lyrics = """أنت غيرهم يا حبيبي أنت في عيني ملاك
 العمر يحلى ويزيد بهاء وبصوتك المداوي وطيب هواك
@@ -332,7 +332,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "قلب عاشق دليله",
                     englishTitle = "Qalb Asheq Daleelo",
-                    album = "شيء غريب",
+                    album = "روائع وسنجلات",
                     year = "1991",
                     lyrics = """قلب عاشق وعاشق دليله ما يرجع في كلامه ويغش
 الحب عهد ووفا صافي ما يعرف يوم غدر وغش
@@ -349,7 +349,7 @@ class SongRepository(private val songDao: SongDao) {
                 Song(
                     title = "شكراً",
                     englishTitle = "Shokran",
-                    album = "الله كريم",
+                    album = "روائع وسنجلات",
                     year = "2009",
                     lyrics = """شكراً لأنك حطمت عهد الهوى والوفا والجمال
 وسبتني بحيرتي وأشواقي عايش ع خيوط الخيال
