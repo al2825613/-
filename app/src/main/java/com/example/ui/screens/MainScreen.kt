@@ -764,7 +764,7 @@ fun LyricsTabContent(
                 }
             }
 
-            Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
 
             Spacer(modifier = Modifier.height(12.dp))
 

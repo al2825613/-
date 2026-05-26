@@ -199,17 +199,7 @@ class MusicService : Service() {
             .addAction(android.R.drawable.ic_media_next, "التالي", nextPendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "إغلاق", stopPendingIntent)
 
-        // Apply media style layout if applicable (with safe fallback to prevent crashes)
-        try {
-            builder.setStyle(
-                androidx.media.app.NotificationCompat.MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 2)
-                    .setShowCancelButton(true)
-                    .setCancelButtonIntent(stopPendingIntent)
-            )
-        } catch (e: Throwable) {
-            Log.e("MusicService", "Failed to apply MediaStyle, using fallback style: ${e.message}")
-        }
+        // MediaStyle is omitted to prevent Class Verification errors and runtime linkage crashes across Android configurations.
 
         return builder.build()
     }

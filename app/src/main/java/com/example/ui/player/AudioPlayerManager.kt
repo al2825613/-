@@ -25,11 +25,7 @@ class AudioPlayerManager(private val context: Context) {
     var onNextCallback: (() -> Unit)? = null
     var onPreviousCallback: (() -> Unit)? = null
 
-    private val playerContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        context.createAttributionContext("audiotag")
-    } else {
-        context
-    }
+    private val playerContext = context
 
     private var mediaPlayer: MediaPlayer? = null
     
@@ -254,9 +250,6 @@ class AudioPlayerManager(private val context: Context) {
                     .setAudioFormat(audioFormat)
                     .setBufferSizeInBytes(minBufferSize.coerceAtLeast(8192))
                     .setTransferMode(AudioTrack.MODE_STREAM)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    trackBuilder.setContext(playerContext)
-                }
                 audioTrack = trackBuilder.build()
                 
                 audioTrack.play()
@@ -364,9 +357,6 @@ class AudioPlayerManager(private val context: Context) {
                 .setAudioFormat(audioFormat)
                 .setBufferSizeInBytes(minBufferSize.coerceAtLeast(bufferSize * 2))
                 .setTransferMode(AudioTrack.MODE_STREAM)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                trackBuilder.setContext(playerContext)
-            }
             track = trackBuilder.build()
             
             track.play()
