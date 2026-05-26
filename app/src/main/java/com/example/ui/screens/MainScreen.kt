@@ -343,27 +343,6 @@ fun SongsTabContent(
     onSelectCategory: (String?) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Aesthetic filled search bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearch,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .testTag("search_input"),
-            placeholder = { Text("ابحث عن أغنية أو كلمة من الروائع...", color = Color.Gray) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "بحث", tint = MaterialTheme.colorScheme.primary) },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                cursorColor = MaterialTheme.colorScheme.primary
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
         // Mood Categories filters
         val categories = listOf("الكل", "طرب", "شجن", "كلاسيكيات")
         Row(

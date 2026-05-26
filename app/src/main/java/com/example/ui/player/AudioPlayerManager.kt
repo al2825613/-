@@ -48,8 +48,13 @@ class AudioPlayerManager(private val context: Context) {
     private var progressJob: Job? = null
     private val playerScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    private class ActiveNote(val job: Job, var track: AudioTrack?)
-    private val activeSingleNotes = java.util.Collections.synchronizedList(mutableListOf<ActiveNote>())
+    private class PluckState(
+        val freq: Double,
+        var currentSample: Int,
+        val totalSamples: Int
+    )
+    private val activePlucks = java.util.Collections.synchronizedList(mutableListOf<PluckState>())
+    private var mixerJob: Job? = null
 
     init {
         startProgressTracker()
@@ -287,104 +292,126 @@ class AudioPlayerManager(private val context: Context) {
      * Synthesize and immediately play a single beautiful live acoustic Note (for the Virtual Oud interactable!).
      */
     fun playSingleNote(frequency: Double) {
-        val noteJob = playerScope.launch(Dispatchers.Default) {
-            var track: AudioTrack? = null
-            var activeNoteRef: ActiveNote? = null
-            try {
-                // Ensure we don't exceed 4 concurrent single note AudioTracks to prevent system pool exhaustion
-                synchronized(activeSingleNotes) {
-                    while (activeSingleNotes.size >= 4) {
-                        val oldest = activeSingleNotes.removeAt(0)
-                        oldest.job.cancel()
-                        try {
-                            oldest.track?.stop()
-                        } catch (e: Exception) {}
-                        try {
-                            oldest.track?.release()
-                        } catch (e: Exception) {}
-                    }
-                }
+        val sampleRate = 44100
+        val durationMs = 600L
+        val totalSamples = (sampleRate * durationMs / 1000).toInt()
+        val newPluck = PluckState(frequency, 0, totalSamples)
+        
+        synchronized(activePlucks) {
+            activePlucks.add(newPluck)
+        }
+        
+        startMixerIfNeeded()
+    }
 
-                val sampleRate = 44100
-                val noteDurationMs = 600L
-                val bgSize = (sampleRate * noteDurationMs / 1000).toInt()
-                val noteBuffer = ShortArray(bgSize)
-                
-                // Build plucking wave
-                for (i in noteBuffer.indices) {
-                    val time = i.toDouble() / sampleRate
-                    val wave = sin(2 * Math.PI * frequency * time)
-                    // Classic guitar/Oud overtones (warm resonance)
-                    val oct = 0.4 * sin(2 * Math.PI * (frequency * 2) * time)
-                    val fifth = 0.2 * sin(2 * Math.PI * (frequency * 1.5) * time)
-                    
-                    // Exponential decay envelope
-                    val envelope = Math.exp(-5.0 * i / bgSize)
-                    noteBuffer[i] = ((wave + oct + fifth) / 1.6 * envelope * Short.MAX_VALUE).toInt().toShort()
-                }
-                
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-                
-                val audioFormat = AudioFormat.Builder()
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(sampleRate)
-                    .build()
-                
-                track = AudioTrack.Builder()
-                    .setAudioAttributes(audioAttributes)
-                    .setAudioFormat(audioFormat)
-                    .setBufferSizeInBytes(noteBuffer.size * 2)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .build()
-                
-                activeNoteRef = ActiveNote(coroutineContext[Job]!!, track)
-                synchronized(activeSingleNotes) {
-                    activeSingleNotes.add(activeNoteRef)
-                }
-
-                track.write(noteBuffer, 0, noteBuffer.size)
-                track.play()
-                delay(noteDurationMs + 100L)
-            } catch (e: Exception) {
-                Log.e("AudioPlayerManager", "playSingleNote error: ${e.message}")
-            } finally {
-                activeNoteRef?.let {
-                    synchronized(activeSingleNotes) {
-                        activeSingleNotes.remove(it)
-                    }
-                }
-                try {
-                    track?.stop()
-                } catch (e: Exception) {
-                    // Ignore
-                }
-                try {
-                    track?.release()
-                } catch (e: Exception) {
-                    // Ignore
+    private fun startMixerIfNeeded() {
+        synchronized(this) {
+            if (mixerJob == null || mixerJob?.isActive == false) {
+                mixerJob = playerScope.launch(Dispatchers.Default) {
+                    runMixerLoop()
                 }
             }
+        }
+    }
+
+    private suspend fun runMixerLoop() {
+        val sampleRate = 44100
+        val bufferSize = 2048
+        val buffer = ShortArray(bufferSize)
+        
+        var track: AudioTrack? = null
+        try {
+            val minBufferSize = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            
+            val audioFormat = AudioFormat.Builder()
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(sampleRate)
+                .build()
+            
+            track = AudioTrack.Builder()
+                .setAudioAttributes(audioAttributes)
+                .setAudioFormat(audioFormat)
+                .setBufferSizeInBytes(minBufferSize.coerceAtLeast(bufferSize * 2))
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build()
+            
+            track.play()
+            
+            while (currentCoroutineContext().isActive) {
+                var hasPlucks = false
+                val localPlucks = mutableListOf<PluckState>()
+                synchronized(activePlucks) {
+                    if (activePlucks.isNotEmpty()) {
+                        localPlucks.addAll(activePlucks)
+                        hasPlucks = true
+                    }
+                }
+                
+                if (!hasPlucks) {
+                    break
+                }
+                
+                buffer.fill(0)
+                
+                for (i in 0 until bufferSize) {
+                    var mixedSample = 0.0
+                    val iterator = localPlucks.iterator()
+                    while (iterator.hasNext()) {
+                        val pluck = iterator.next()
+                        if (pluck.currentSample >= pluck.totalSamples) {
+                            synchronized(activePlucks) {
+                                activePlucks.remove(pluck)
+                            }
+                            iterator.remove()
+                            continue
+                        }
+                        
+                        val time = pluck.currentSample.toDouble() / sampleRate
+                        val wave = sin(2 * Math.PI * pluck.freq * time)
+                        val oct = 0.4 * sin(2 * Math.PI * (pluck.freq * 2) * time)
+                        val fifth = 0.2 * sin(2 * Math.PI * (pluck.freq * 1.5) * time)
+                        
+                        val envelope = Math.exp(-5.0 * pluck.currentSample / pluck.totalSamples)
+                        mixedSample += ((wave + oct + fifth) / 1.6 * envelope)
+                        
+                        pluck.currentSample++
+                    }
+                    
+                    val clampedSample = (mixedSample.coerceIn(-1.0, 1.0) * Short.MAX_VALUE).toInt()
+                    buffer[i] = clampedSample.toShort()
+                }
+                
+                track.write(buffer, 0, bufferSize)
+                yield()
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlayerManager", "Mixer loop error: ${e.message}")
+        } finally {
+            try {
+                track?.stop()
+            } catch (e: Exception) {}
+            try {
+                track?.release()
+            } catch (e: Exception) {}
         }
     }
 
     fun release() {
         stopAll()
         progressJob?.cancel()
-        synchronized(activeSingleNotes) {
-            for (note in activeSingleNotes) {
-                note.job.cancel()
-                try {
-                    note.track?.stop()
-                } catch (e: Exception) {}
-                try {
-                    note.track?.release()
-                } catch (e: Exception) {}
-            }
-            activeSingleNotes.clear()
+        mixerJob?.cancel()
+        synchronized(activePlucks) {
+            activePlucks.clear()
         }
         playerScope.cancel()
     }
