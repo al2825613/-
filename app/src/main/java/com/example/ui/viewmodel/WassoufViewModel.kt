@@ -50,8 +50,8 @@ class WassoufViewModel(application: Application) : AndroidViewModel(application)
         playerManager.onPreviousCallback = { slidePrevious(songsList.value) }
 
         viewModelScope.launch {
-            // Prepopulate Room DB with our beautiful tracklist
-            repository.checkAndPrepopulate()
+            // Prepopulate/Sync Room DB with our beautiful tracklist from assets/songs.json
+            repository.checkAndPrepopulate(application)
         }
     }
 

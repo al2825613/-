@@ -18,4 +18,15 @@ data class Song(
     val category: String,
     val isFavorite: Boolean = false,
     val playCount: Int = 0
-) : Serializable
+) : Serializable {
+    fun getLocalOrFallbackImage(): Any {
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            return imageUrl
+        }
+        if (imageUrl.isNotEmpty()) {
+            val cleanPath = if (imageUrl.startsWith("images/")) imageUrl else "images/$imageUrl"
+            return "file:///android_asset/$cleanPath"
+        }
+        return "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400" // Premium default
+    }
+}

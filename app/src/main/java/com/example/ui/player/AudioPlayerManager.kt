@@ -77,6 +77,30 @@ class AudioPlayerManager(private val context: Context) {
         }
     }
 
+    private fun getFallbackAudioUrl(song: Song): String {
+        return when (song.title) {
+            "كلام الناس" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            "طبيب جراح" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            "صابر وراضي" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            "الهوى سلطان" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+            "سلف ودين" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+            "خسرت كل الناس" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+            "حلف القمر" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"
+            "لسه الدنيا بخير" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+            "لو نويت" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
+            "حبيبي كده" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"
+            "روحي يا نسمة" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3"
+            "حد ينسى قلبه" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3"
+            "يوم الوداع" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3"
+            "شي غريب" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3"
+            "بتعتب عليّ" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3"
+            "انت غيرهم" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            "قلب عاشق دليله" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            "شكراً" -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            else -> "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        }
+    }
+
     fun play(song: Song) {
         stopAll()
         _currentSong.value = song
@@ -88,7 +112,7 @@ class AudioPlayerManager(private val context: Context) {
             return
         }
 
-        // Stream mode
+        // Stream or local asset mode
         try {
             mediaPlayer = MediaPlayer().apply {
                 val audioAttributes = AudioAttributes.Builder()
@@ -96,7 +120,40 @@ class AudioPlayerManager(private val context: Context) {
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
                 setAudioAttributes(audioAttributes)
-                setDataSource(playerContext, Uri.parse(song.audioUrl))
+
+                val urlToPlay = song.audioUrl
+                if (urlToPlay.startsWith("http://") || urlToPlay.startsWith("https://")) {
+                    setDataSource(playerContext, Uri.parse(urlToPlay))
+                } else {
+                    // Try playing from local asset folders
+                    val potentialPaths = listOf(
+                        urlToPlay,
+                        if (urlToPlay.startsWith("songs/")) urlToPlay else "songs/$urlToPlay",
+                        "songs/${song.englishTitle.replace(" ", "_").lowercase()}.mp3",
+                        "songs/${song.englishTitle.replace(" ", "").lowercase()}.mp3"
+                    )
+                    var foundLocal = false
+                    for (path in potentialPaths) {
+                        if (path.isEmpty()) continue
+                        try {
+                            val afd = playerContext.assets.openFd(path)
+                            setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                            afd.close()
+                            foundLocal = true
+                            Log.d("AudioPlayerManager", "Playing from local asset: $path")
+                            break
+                        } catch (e: Exception) {
+                            // Try next path candidate
+                        }
+                    }
+                    if (!foundLocal) {
+                        // Fallback to online url if local is missing on disk
+                        val fallbackUrl = getFallbackAudioUrl(song)
+                        Log.d("AudioPlayerManager", "Local asset file not found. Playing fallback URL: $fallbackUrl")
+                        setDataSource(playerContext, Uri.parse(fallbackUrl))
+                    }
+                }
+
                 setOnPreparedListener { mp ->
                     mp.start()
                     _isPlaying.value = true

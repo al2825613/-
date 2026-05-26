@@ -218,9 +218,17 @@ class MusicService : Service() {
 
     private suspend fun loadAlbumArt(url: String): Bitmap? = withContext(Dispatchers.IO) {
         try {
+            val dataObj: Any = if (url.startsWith("http://") || url.startsWith("https://")) {
+                url
+            } else if (url.isNotEmpty()) {
+                val cleanPath = if (url.startsWith("images/")) url else "images/$url"
+                "file:///android_asset/$cleanPath"
+            } else {
+                return@withContext null
+            }
             val loader = Coil.imageLoader(this@MusicService)
             val request = ImageRequest.Builder(this@MusicService)
-                .data(url)
+                .data(dataObj)
                 .allowHardware(false) // Request hardware=false to acquire standalone Bitmap for Notification
                 .build()
             val result = (loader.execute(request) as? SuccessResult)?.drawable

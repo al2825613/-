@@ -543,7 +543,7 @@ fun SongItemCard(
                     .background(Color.DarkGray)
             ) {
                 AsyncImage(
-                    model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
+                    model = song.getLocalOrFallbackImage(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -1095,7 +1095,7 @@ fun MiniPlayer(
                         .rotate(if (isPlaying) rotationAngle else 0f)
                 ) {
                     AsyncImage(
-                        model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
+                        model = song.getLocalOrFallbackImage(),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -1250,7 +1250,7 @@ fun FullScreenPlayer(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = if (song.imageUrl.isNotEmpty()) song.imageUrl else R.drawable.img_george_wassouf,
+                    model = song.getLocalOrFallbackImage(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
