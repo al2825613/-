@@ -1,56 +1,39 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.viewModels
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import com.example.ui.player.MusicService
 import com.example.ui.screens.MainScreen
-import com.example.ui.screens.WassoufSplashScreen
-import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.WassoufSongsTheme
 import com.example.ui.viewmodel.WassoufViewModel
 
+@OptIn(UnstableApi::class)
 class MainActivity : ComponentActivity() {
+    
+    private val viewModel: WassoufViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        enableEdgeToEdge()
+
+        // Start background media service
+        try {
+            val serviceIntent = Intent(this, MusicService::class.java)
+            startService(serviceIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
         setContent {
-            MyApplicationTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.background
-                ) {
-                    val viewModel: WassoufViewModel = viewModel()
-                    var showSplash by remember { mutableStateOf(true) }
-
-                    // Highly polished animated cross-fade transition from splash to main content
-                    Crossfade(
-                        targetState = showSplash,
-                        animationSpec = tween(durationMillis = 600)
-                    ) { isSplashActive ->
-                        if (isSplashActive) {
-                            WassoufSplashScreen(
-                                onSplashFinished = { showSplash = false }
-                            )
-                        } else {
-                            MainScreen(viewModel = viewModel)
-                        }
-                    }
-                }
+            WassoufSongsTheme {
+                MainScreen(viewModel)
             }
         }
     }
