@@ -2,18 +2,33 @@ package com.example.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 
 @Entity(tableName = "songs")
 data class Song(
-    @PrimaryKey val id: String,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
-    val arabicTitle: String,
-    val description: String,
-    val durationText: String,
+    val englishTitle: String,
+    val album: String,
+    val year: String,
     val lyrics: String,
-    val remoteUrl: String,
-    val localFilePath: String? = null,
+    val duration: Int, // in seconds
+    val audioUrl: String,
+    val imageUrl: String,
+    val category: String,
     val isFavorite: Boolean = false,
-    val downloadProgress: Int = 0, // 0 to 100
-    val downloadStatus: String = "NOT_DOWNLOADED" // NOT_DOWNLOADED, DOWNLOADING, COMPLETED, FAILED
-)
+    val playCount: Int = 0,
+    val isDownloaded: Boolean = false,
+    val localFilePath: String? = null
+) : Serializable {
+    fun getLocalOrFallbackImage(): Any {
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            return imageUrl
+        }
+        if (imageUrl.isNotEmpty()) {
+            val cleanPath = if (imageUrl.startsWith("images/")) imageUrl else "images/$imageUrl"
+            return "file:///android_asset/$cleanPath"
+        }
+        return com.example.R.drawable.img_wassouf_fallback
+    }
+}

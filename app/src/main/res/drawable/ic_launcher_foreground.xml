@@ -1,29 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Golden metallic outer disk -->
     <item
-        android:width="72dp"
-        android:height="72dp"
-        android:gravity="center">
-        <shape android:shape="oval">
-            <solid android:color="#CDA35B" />
-        </shape>
-    </item>
-
-    <!-- Black vinyl spacer -->
-    <item
-        android:width="68dp"
-        android:height="68dp"
-        android:gravity="center">
-        <shape android:shape="oval">
-            <solid android:color="#0F0F0F" />
-        </shape>
-    </item>
-
-    <!-- The elegant portrait of Abu Wadee -->
-    <item
-        android:width="64dp"
-        android:height="64dp"
-        android:drawable="@drawable/img_wassouf_square_1779877467246"
+        android:width="66dp"
+        android:height="66dp"
+        android:drawable="@drawable/img_app_icon"
         android:gravity="center" />
 </layer-list>
