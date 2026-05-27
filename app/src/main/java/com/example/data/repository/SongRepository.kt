@@ -24,115 +24,140 @@ class SongRepository(
 
     suspend fun initializeDefaultSongsIfNeeded() {
         withContext(Dispatchers.IO) {
-            val count = songDao.getAllSongs().first().size
-            if (count == 0) {
-                val songs = listOf(
-                    Song(
-                        id = "halaf_el_qamar",
-                        title = "Halaf El Qamar",
-                        arabicTitle = "حلف القمر",
-                        description = "من روائع جورج وسوف الكلاسيكية التي أطلقته في سماء الفن.",
-                        durationText = "05:12",
-                        lyrics = """حلف القمر يمين الله يا حبنا
-أغلى من عيوننا ونور قلبنا
-يا حبيبي يلا نعيش في عيون الليل
-يلا نعيش في نور القمر
-ونقول للدنيا دي كلها يا حبنا
-أغلى من عيوننا ونور قلبنا
+            val songDataList = listOf(
+                Pair("حلف القمر", "Halaf El Qamar"),
+                Pair("طبيب جراح", "Tabeeb Garrah"),
+                Pair("كلام الناس", "Kalam El Nas"),
+                Pair("سلف ودين", "Salaf We Deen"),
+                Pair("الهوى سلطان", "El Hawa Sultan"),
+                Pair("يوم الوداع", "Youm El Wadaa"),
+                Pair("روح الروح", "Rouh El Rouh"),
+                Pair("لسه الدنيا بخير", "Lissa El Donya Bkheir"),
+                Pair("صابر وراضي", "Saber We Rady"),
+                Pair("صياد الطيور", "Sayyad El Toyour"),
+                Pair("لو نويت", "Law Nawayt"),
+                Pair("قدك المياس", "Qaddokal Mayyas"),
+                Pair("خسرت كل الناس", "Khesert Kol El Nas"),
+                Pair("حد ينسى قلبه", "Had Yensa Qalbo"),
+                Pair("بستان تسلملي", "Bostan Teslamly"),
+                Pair("الحب الكبير", "El Hob El Kabeer"),
+                Pair("الحب الأولاني", "El Hob El Awalany"),
+                Pair("ارمي الشبك", "Irmi El Shabak"),
+                Pair("سلمتك بيد الله", "Sallamtak Biyad Allah"),
+                Pair("قلبك طيب", "Qalbak Tayyeb"),
+                Pair("شيء غريب", "Shee Ghareeb"),
+                Pair("بستني باليوم واليومين", "Bastanny Bel Youm"),
+                Pair("ليلة وداعنا", "Laylat Wadaana"),
+                Pair("حظ يا بخت", "Hazz Ya Bakht"),
+                Pair("حنين", "Haneen"),
+                Pair("حارمنا من أنسك", "Haremna Men Ansak"),
+                Pair("شكراً", "Shokran"),
+                Pair("بنفكر في الناس", "Bnefaker Fel Nas"),
+                Pair("ذكريات", "Zekrayat"),
+                Pair("عيون القلب", "Oyoun El Qalb"),
+                Pair("جرحونا", "Garahona"),
+                Pair("الحب شاطر", "El Hob Shater"),
+                Pair("زمن العجايب", "Zaman El Ajaweb"),
+                Pair("لو يواعدني", "Law Yowaadny"),
+                Pair("يا عيني ع الآه", "Ya Einy Al Ah"),
+                Pair("أصعب فراق", "Asab Foraq"),
+                Pair("فرحة رجوعك يا غالي", "Farhet Rogoouak"),
+                Pair("دول مش حبايب", "Dol Mesh Habayeb"),
+                Pair("ليل العاشقين", "Layl El Ashiqeen"),
+                Pair("الذهب يا حبيبي", "El Dahab Ya Habibi"),
+                Pair("الحب كدة", "El Hob Keda"),
+                Pair("يا بياعين الهوى", "Ya Bayaeen El Hawa"),
+                Pair("يا ريتني", "Ya Raytany"),
+                Pair("مريم", "Maryam"),
+                Pair("حبيبي كده", "Habibi Keda"),
+                Pair("سكت الكلام", "Sakat El Kalam"),
+                Pair("ملكة جمال الروح", "Malekat Gamal El Rouh"),
+                Pair("صاحي الليل", "Sahi El Layl"),
+                Pair("ياه على الزمن", "Yah Al Zaman"),
+                Pair("ترغلي يا ترغلي", "Tareghly Ya Tareghly"),
+                Pair("مسافري الغربة", "Msafery El Ghorba"),
+                Pair("حكاية غرام", "Hikayat Gharam"),
+                Pair("عيون غزلان", "Oyoun Ghazlan"),
+                Pair("يا ريت كل القلوب", "Ya Rayt Kol El Qoloub"),
+                Pair("القلوب عند بعضها", "El Qoloub End Badha"),
+                Pair("على جبينك مكتوب", "Ala Gbeenak Maktoub"),
+                Pair("دار الزمان", "Dar El Zaman"),
+                Pair("مغرم يا ليل", "Moghram Ya Layl"),
+                Pair("روح يا نسمة", "Rouh Ya Nasma"),
+                Pair("الأيام بتعدي", "El Ayyam Bteaddy"),
+                Pair("عاشق ومغرم", "Ashiq We Moghram"),
+                Pair("الغالي", "El Ghaly"),
+                Pair("يا حبيبي قولي", "Ya Habibi Qooly"),
+                Pair("جرحونا برضاهم", "Garahona Berdahom"),
+                Pair("سلمت قلبي ليك", "Sallamt Qalby Leek"),
+                Pair("مسافر", "Musafer"),
+                Pair("سيبهم يقولوا", "Seebhom Yaqoolo"),
+                Pair("الصبر طيب", "El Sabr Tayyeb"),
+                Pair("من هنا ورايح", "Men Hena We Rayeh"),
+                Pair("بتعاتبني على كلمة", "Btatebny Ala Kelma"),
+                Pair("يا أغلى من عيني", "Ya Aghla Men Einy"),
+                Pair("حيرة العاشقين", "Hayrat El Ashiqeen"),
+                Pair("طربيات وسوفية", "Tarabiyat Wassoufya"),
+                Pair("حبايبنا فين", "Habayebna Fein"),
+                Pair("كلنا مجروحين", "Kolona Magrouheen"),
+                Pair("دمعة حزن", "Damaat Hozn"),
+                Pair("قلب المحب دليله", "Qalb El Moheb"),
+                Pair("يا نسمة الصيف", "Ya Nasmat El Sayf"),
+                Pair("طاروا الطيور", "Tarou El Toyour"),
+                Pair("لا تروح وتغيب", "La Trooh We Tgheeb"),
+                Pair("يا عيني على الصبر", "Ya Einy Al Sabr"),
+                Pair("بكتبلك بالدموع", "Baktoblak Bel Domooa"),
+                Pair("كلامك يا حبيبي مسك", "Kalamak Musk"),
+                Pair("صرخة وجع", "Sarkhat Wajaa"),
+                Pair("عدي وبس", "Addy We Bas"),
+                Pair("عاشق عيونك", "Ashiq Oyounak"),
+                Pair("الهوى غلاب", "El Hawa Ghallab"),
+                Pair("ليالي الحب راحت فين", "Layaly El Hob"),
+                Pair("يا زمان الآهات", "Ya Zaman El Ahat"),
+                Pair("طال السفر يا غائب", "Tal El Safar"),
+                Pair("دموع الفراق حارة", "Domooa El Foraq"),
+                Pair("سلطان الهوى", "Sultan El Hawa"),
+                Pair("يا بياع الورد", "Ya Bayaa El Ward"),
+                Pair("سهرت الليل", "Sahart El Layl"),
+                Pair("الحبايب", "El Habayeb"),
+                Pair("لو كل عاشق", "Law Kol Ashiq"),
+                Pair("أنا مسافر يا أمي", "Ana Musafer Ya Omy"),
+                Pair("شيبون", "Sheeboun"),
+                Pair("رحل البطل", "Rahal El Batal"),
+                Pair("الزمن دوار", "Al Zaman Dawwar")
+            )
 
-الله على حبنا الله عليه
-من كل العيون حنخاف عليه
-مهما جرى مهما كان
-إنت حبيبي لآخر الزمان
+            // Let's build exactly 100 songs dynamically with different SoundHelix URLs
+            val defaultSongs = songDataList.mapIndexed { index, pair ->
+                val songIndex = (index % 16) + 1 // SoundHelix provides multiple songs up to 16
+                val durationText = when (index % 4) {
+                    0 -> "05:12"
+                    1 -> "06:40"
+                    2 -> "05:54"
+                    else -> "07:05"
+                }
+                
+                Song(
+                    id = "wassouf_song_${index + 1}",
+                    title = pair.second,
+                    arabicTitle = pair.first,
+                    description = "من درر طرب أبو وديع الخالدة والمميزة - أغنية رقم ${index + 1}.",
+                    durationText = durationText,
+                    lyrics = """أغنية ${pair.first} الخالدة بصوت أبو وديع
 
-حلف القمر يمين الله يا حبنا
-أغلى من عيوننا ونور قلبنا""",
-                        remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-                    ),
-                    Song(
-                        id = "tabeeb_garrah",
-                        title = "Tabeeb Garrah",
-                        arabicTitle = "طبيب جراح",
-                        description = "أغنية حزينة معبرة ولحن ذهبي يسلط الضوء على آلام الجراح.",
-                        durationText = "06:40",
-                        lyrics = """طبيب جراح قلوب الناس أداويها
-ياما جراح سهرت الليل إداريها
-وأنا اللي بيا ياما جراح ما أقسى لياليها
-طبيب جراح قلوب الناس أداويها
-
-يا ريت كل القلوب تنسى جراحها
-وتعيش مرتاحة الفرحة تملى لياليها
-وأنا اللي بيا ياما جراح ما أقسى لياليها
-
-لو كل عاشق جرح يتداوى قلبه بساعة
-كنت شلت جروحي كلها لدنيا بيا شجاعة
-لكن جرح الهوى ملوش نهاية ودايم الصراع""",
-                        remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
-                    ),
-                    Song(
-                        id = "kalam_el_nas",
-                        title = "Kalam El Nas",
-                        arabicTitle = "كلام الناس",
-                        description = "أحد أكثر الأغاني شهرة وجماهيرية، تناقش نظرة المجتمع وقوتها.",
-                        durationText = "05:54",
-                        lyrics = """كلام الناس لا بيقدم ولا بيأخر
-كلام الناس ملامة وغيره مش أكثر
-وليه بنلتم بلوم الناس؟
-وليه بنهتم بكلام الناس؟
-حبيبي أنا وإنت وبس
-كفاية علينا حب وهمس
-
-سهرنا الشوق ونسينا الخوف
-وقابلنا في دنيتنا ظروف
-وعمر كلامهم ما يفرقنا
-ولا كلمة عذول حتعوقنا...
-
-كلام الناس لا بيقدم ولا بيأخر
-كلام الناس ملامة وغيره مش أكثر""",
-                        remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
-                    ),
-                    Song(
-                        id = "salaf_we_deen",
-                        title = "Salaf We Deen",
-                        arabicTitle = "سلف ودين",
-                        description = "أغنية درامية رائعة تتحدث عن العدل والجزاء والزمن بكبرياء.",
-                        durationText = "07:05",
-                        lyrics = """سلف ودين والفرق شاسع بين الزمن
-والدنيا دي بتعطي الدروس بأغلى ثمن
-بكرة تدور الأيام عليك
-واللي عملته يرجع ليك
-وحتدفع الثمن غالي
-وتندم ع اللي فات يا غالي
-
-سلف ودين...
-كنت فاكر إنك أقوى من الزمان
-وإن قلبك مش حيعرف الهوان
-لكن الزمن دوّار
-والله على المظلوم ستّار...""",
-                        remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
-                    ),
-                    Song(
-                        id = "el_hawa_sultan",
-                        title = "El Hawa Sultan",
-                        arabicTitle = "الهوى سلطان",
-                        description = "لقب بها جورج وسوف (سلطان الطرب)، أغنية الطرب الأصيل.",
-                        durationText = "06:15",
-                        lyrics = """الهوى سلطان يا حبيبي الهوى سلطان
-مين يرضى يحب يا عمري وهو هيمان
-الحب عذاب وسهر ونواح
-لكن بيه الروح بترتاح
-يا حبيبي سلمتك عمري
-وانت في قلبي وعيني سلطان
-
-الهوى سلطان...
-سهرنا ليالي الهوى الجميل
-وعرفنا في حبه طعم المستحيل
-حبك خلّى دنيتي ورد وأنوار
-يا ملاكي يا أغلى الأزهار""",
-                        remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
-                    )
+يا حبيبي الهوى طرب وألحان
+وسلطنة طربية مع أبو وديع الإمبراطور
+يا ريت كل القلوب تسمع وتندرج في عالم السلطنة واللحن الأصيل.
+حبيبي يا ملهم وعمري الجميل فراقك وجع ملوش بديل.""",
+                    remoteUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-$songIndex.mp3"
                 )
-                songDao.insertSongs(songs)
+            }
+
+            for (song in defaultSongs) {
+                val existing = songDao.getSongById(song.id)
+                if (existing == null) {
+                    songDao.insertSongs(listOf(song))
+                }
             }
         }
     }

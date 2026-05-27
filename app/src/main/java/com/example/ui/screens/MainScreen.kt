@@ -3,6 +3,7 @@ package com.example.ui.screens
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.Song
 import com.example.ui.theme.*
@@ -63,6 +65,7 @@ fun MainScreen(
 
     var selectedTab by remember { mutableStateOf(0) } // 0 = Library, 1 = Offline, 2 = Favorites
     var isExpandedPlayerVisible by remember { mutableStateOf(false) }
+    var showSplashScreen by remember { mutableStateOf(true) }
 
     val listToShow = when (selectedTab) {
         0 -> allSongs
@@ -70,11 +73,14 @@ fun MainScreen(
         else -> favoriteSongs
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DarkBg)
-    ) {
+    if (showSplashScreen) {
+        WassoufSplashScreen(onDismiss = { showSplashScreen = false })
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(DarkBg)
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -88,8 +94,8 @@ fun MainScreen(
                     .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
             ) {
                 // Vintage Newspaper Collage Image Background
-                Image(
-                    painter = painterResource(id = R.drawable.img_wassouf_collage_1779875902192),
+                AsyncImage(
+                    model = R.drawable.img_wassouf_collage_1779875902192,
                     contentDescription = "Sultan Al-Tarab Scrapbook Collage",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -161,8 +167,8 @@ fun MainScreen(
                             .border(2.dp, GoldAccent, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                        AsyncImage(
+                            model = R.drawable.img_wassouf_square_1779877467246,
                             contentDescription = "Portrait",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -328,6 +334,7 @@ fun MainScreen(
         }
     }
 }
+}
 
 @Composable
 fun SongRowItem(
@@ -368,8 +375,8 @@ fun SongRowItem(
                 contentAlignment = Alignment.Center
             ) {
                 // High visual quality portrait background
-                Image(
-                    painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                AsyncImage(
+                    model = R.drawable.img_wassouf_square_1779877467246,
                     contentDescription = "Song cover artwork",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -560,8 +567,8 @@ fun MiniPlayer(
                     contentAlignment = Alignment.Center
                 ) {
                     // Rotating beautiful album cover inside miniplayer
-                    Image(
-                        painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                    AsyncImage(
+                        model = R.drawable.img_wassouf_square_1779877467246,
                         contentDescription = "Rotating album cover",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -786,8 +793,8 @@ fun FullPlayerScreen(
                                 .border(2.5.dp, GoldAccent, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                            AsyncImage(
+                                model = R.drawable.img_wassouf_square_1779877467246,
                                 contentDescription = "George Wassouf vintage label",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -1008,6 +1015,150 @@ fun FullPlayerScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun WassoufSplashScreen(
+    onDismiss: () -> Unit
+) {
+    var timerPercent by remember { mutableStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val duration = 3000f // 3 seconds
+        for (i in 1..100) {
+            delay(15)
+            timerPercent = i / 100f
+        }
+        onDismiss()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF26231C), // Deep warm brown center
+                        Color(0xFF0D0C09)  // Black charcoal background
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .windowInsetsPadding(WindowInsets.safeDrawing),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Top branding label
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 40.dp)
+            ) {
+                Text(
+                    text = "سُلْطَان الطَّرَب",
+                    color = GoldAccent,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 4.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                // Decorative divider line
+                Box(
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(1.5.dp)
+                        .background(GoldAccent.copy(alpha = 0.5f))
+                )
+            }
+
+            // Center portrait and spinner
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Large circular portrait enclosing George Wassouf
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .border(3.dp, GoldAccent, CircleShape)
+                        .padding(6.dp)
+                        .border(1.dp, GoldAccent.copy(alpha = 0.3f), CircleShape)
+                        .clip(CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = R.drawable.img_wassouf_square_1779877467246,
+                        contentDescription = "George Wassouf portrait",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "جورج وسوف",
+                    color = TextPrimary,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "بوابة الأنغام الطربية العريقة والخالدة",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            // Bottom loading progress and skip button
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 40.dp)
+            ) {
+                // Custom premium progress bar
+                Box(
+                    modifier = Modifier
+                        .width(180.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(timerPercent)
+                            .background(GoldAccent)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Skip button
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GoldAccent.copy(alpha = 0.15f),
+                        contentColor = GoldAccent
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.dp, GoldAccent.copy(alpha = 0.3f)),
+                    modifier = Modifier.height(38.dp)
+                ) {
+                    Text(
+                        text = "دخول السلطنة",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }

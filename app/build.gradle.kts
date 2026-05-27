@@ -68,3 +68,5 @@ dependencies {
     // Coil for images
     implementation(libs.coil.compose)
 }
+
+
