@@ -3,6 +3,7 @@ package com.example.ui.player
 import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -13,22 +14,12 @@ class MusicService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        // Connect existing shared player manager
-        val player = AudioPlayerManager.getPlayer(this)
+        val player = ExoPlayer.Builder(this).build()
         mediaSession = MediaSession.Builder(this, player).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player
-        if (player != null && !player.playWhenReady) {
-            // Stop service if player is paused and app was swiped away
-            stopSelf()
-        }
-        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
@@ -38,5 +29,12 @@ class MusicService : MediaSessionService() {
             mediaSession = null
         }
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val player = mediaSession?.player
+        if (player != null && !player.playWhenReady) {
+            stopSelf()
+        }
     }
 }

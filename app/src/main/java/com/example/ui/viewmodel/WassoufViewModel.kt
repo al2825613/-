@@ -1,103 +1,112 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
-import androidx.annotation.OptIn
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.util.UnstableApi
 import com.example.data.database.WassoufDatabase
 import com.example.data.model.Song
 import com.example.data.repository.SongRepository
 import com.example.ui.player.AudioPlayerManager
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-@OptIn(UnstableApi::class)
 class WassoufViewModel(application: Application) : AndroidViewModel(application) {
-    private val db = WassoufDatabase.getDatabase(application)
-    private val repository = SongRepository(application, db.songDao())
 
-    init {
-        // Self-initialize player to allocate background resources
-        AudioPlayerManager.getPlayer(application)
-        viewModelScope.launch {
-            repository.syncSongsWithJson()
-        }
-    }
+    private val database = WassoufDatabase.getDatabase(application)
+    private val repository = SongRepository(application, database.songDao())
+    val playerManager = AudioPlayerManager(application)
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+    val allSongs: StateFlow<List<Song>> = repository.allSongs
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    private val _selectedCategory = MutableStateFlow("الكل")
-    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
-
-    val songsList: StateFlow<List<Song>> = combine(
-        repository.allSongs,
-        _searchQuery,
-        _selectedCategory
-    ) { allSongs, query, category ->
-        var list = allSongs
-        if (category != "الكل") {
-            list = list.filter { it.category == category }
-        }
-        if (query.isNotEmpty()) {
-            list = list.filter { it.title.contains(query, ignoreCase = true) }
-        }
-        
-        // Pass the loaded list directly to the Player playlist context
-        AudioPlayerManager.setPlaylist(list)
-        list
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val downloadedSongs: StateFlow<List<Song>> = repository.downloadedSongs
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val favoriteSongs: StateFlow<List<Song>> = repository.favoriteSongs
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    // Connecting player live variables
-    val currentSong: StateFlow<Song?> = AudioPlayerManager.currentSong
-    val isPlaying: StateFlow<Boolean> = AudioPlayerManager.isPlaying
-    val currentPosition: StateFlow<Long> = AudioPlayerManager.currentPosition
-    val duration: StateFlow<Long> = AudioPlayerManager.duration
-    val playlist: StateFlow<List<Song>> = AudioPlayerManager.playlist
+    val currentSong: StateFlow<Song?> = playerManager.currentSong
+    val isPlaying: StateFlow<Boolean> = playerManager.isPlaying
+    val playbackProgress: StateFlow<Float> = playerManager.playbackProgress
+    val currentPositionMs: StateFlow<Long> = playerManager.currentPositionMs
+    val durationMs: StateFlow<Long> = playerManager.durationMs
 
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun selectCategory(category: String) {
-        _selectedCategory.value = category
+    init {
+        viewModelScope.launch {
+            repository.initializeDefaultSongsIfNeeded()
+        }
     }
 
     fun playSong(song: Song) {
-        viewModelScope.launch {
-            repository.incrementPlayCount(song)
-            AudioPlayerManager.playSong(song)
-        }
+        playerManager.playSong(song)
     }
 
     fun togglePlayPause() {
-        AudioPlayerManager.togglePlayPause()
+        playerManager.togglePlayPause()
     }
 
-    fun seekTo(positionMs: Long) {
-        AudioPlayerManager.seekTo(positionMs)
+    fun seekTo(progress: Float) {
+        playerManager.seekTo(progress)
     }
 
-    fun playNext() {
-        AudioPlayerManager.playNext()
+    fun seekForward() {
+        playerManager.seekForward()
     }
 
-    fun playPrevious() {
-        AudioPlayerManager.playPrevious()
+    fun seekBackward() {
+        playerManager.seekBackward()
     }
 
     fun toggleFavorite(song: Song) {
         viewModelScope.launch {
-            repository.toggleFavorite(song)
+            repository.toggleFavorite(song.id, song.isFavorite)
+            // Update currently playing reference if it is the same song
+            if (currentSong.value?.id == song.id) {
+                // Trigger live updates in current player view
+            }
+        }
+    }
+
+    fun downloadSong(song: Song) {
+        viewModelScope.launch {
+            repository.downloadSong(song.id, song.remoteUrl)
+        }
+    }
+
+    fun deleteDownload(song: Song) {
+        viewModelScope.launch {
+            repository.deleteDownloadedFile(song.id)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        playerManager.release()
+    }
+
+    class Factory(private val application: Application) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(WassoufViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return WassoufViewModel(application) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

@@ -5,21 +5,23 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
 private val DarkColorScheme = darkColorScheme(
-    primary = GoldPrimary,
-    secondary = GoldSecondary,
-    tertiary = AmberAccent,
-    background = DarkBackground,
+    primary = GoldAccent,
+    secondary = GoldenBeige,
+    tertiary = MutedAmber,
+    background = DarkBg,
     surface = DarkSurface,
+    onPrimary = DarkBg,
+    onSecondary = DarkBg,
+    onBackground = TextPrimary,
+    onSurface = TextPrimary,
     surfaceVariant = DarkSurfaceVariant,
-    onPrimary = DarkBackground,
-    onSecondary = DarkBackground,
-    onBackground = SlateTextPrimary,
-    onSurface = SlateTextPrimary,
-    onSurfaceVariant = SlateTextSecondary
+    onSurfaceVariant = TextSecondary
 )
 
 @Composable
-fun WassoufSongsTheme(content: @Composable () -> Unit) {
+fun WassoufTheme(
+    content: @Composable () -> Unit
+) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = Typography,

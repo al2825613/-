@@ -1,590 +1,971 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
+import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.Song
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.WassoufViewModel
-
-@Composable
-fun MainScreen(viewModel: WassoufViewModel) {
-    val songs by viewModel.songsList.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-
-    val currentSong by viewModel.currentSong.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val currentPosition by viewModel.currentPosition.collectAsState()
-    val duration by viewModel.duration.collectAsState()
-
-    // Enforce Arabic RTL directionality
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            topBar = {
-                HeaderSection()
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Search layout
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChange = { viewModel.updateSearchQuery(it) }
-                    )
-
-                    // Categories slider
-                    CategoryTabs(
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { viewModel.selectCategory(it) }
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Dynamic LazyColumn listing songs
-                    if (songs.isEmpty()) {
-                        EmptyState(query = searchQuery)
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentPadding = PaddingValues(bottom = 120.dp, start = 16.dp, end = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            itemsIndexed(
-                                items = songs,
-                                key = { _, song -> song.title }
-                            ) { index, song ->
-                                SongItemRow(
-                                    index = index + 1,
-                                    song = song,
-                                    isCurrent = currentSong?.title == song.title,
-                                    isPlaying = isPlaying && currentSong?.title == song.title,
-                                    onPlayClick = { viewModel.playSong(song) },
-                                    onFavoriteClick = { viewModel.toggleFavorite(song) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Sticky glassmorphic player card at bottom
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                ) {
-                    PlayerControllerCard(
-                        currentSong = currentSong,
-                        isPlaying = isPlaying,
-                        position = currentPosition,
-                        duration = duration,
-                        onPlayPauseClick = { viewModel.togglePlayPause() },
-                        onNextClick = { viewModel.playNext() },
-                        onPrevClick = { viewModel.playPrevious() },
-                        onSeek = { viewModel.seekTo(it) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun HeaderSection() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 14.dp)
-    ) {
-        Text(
-            text = "أبو وديع الأسطورة",
-            style = MaterialTheme.typography.labelMedium,
-            color = GoldPrimary,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "سلطان الطرب جورج وسوف",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold
-                ),
-                color = SlateTextPrimary
-            )
-            Icon(
-                imageVector = Icons.Default.MusicNote,
-                contentDescription = "Musical Theme",
-                tint = GoldPrimary,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-    }
-}
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(56.dp)
-            .testTag("search_field"),
-        placeholder = {
-            Text(
-                text = "ابحث عن أغنية وديعة...",
-                color = SlateTextSecondary,
-                fontSize = 14.sp
-            )
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = GoldPrimary
-            )
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear search",
-                        tint = SlateTextTertiary
-                    )
-                }
-            }
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(16.dp),
-        colors = TextFieldDefaults.textFieldColors(
-            containerColor = DarkSurface,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            cursorColor = GoldPrimary,
-            focusedTextColor = SlateTextPrimary,
-            unfocusedTextColor = SlateTextPrimary
-        )
-    )
-}
+fun MainScreen(
+    viewModel: WassoufViewModel,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-@Composable
-fun CategoryTabs(selectedCategory: String, onCategorySelected: (String) -> Unit) {
-    val categories = listOf("الكل", "طرب", "شجن", "رومانسيات")
-    
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
+    val downloadedSongs by viewModel.downloadedSongs.collectAsStateWithLifecycle()
+    val favoriteSongs by viewModel.favoriteSongs.collectAsStateWithLifecycle()
+
+    val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val playbackProgress by viewModel.playbackProgress.collectAsStateWithLifecycle()
+    val currentPositionMs by viewModel.currentPositionMs.collectAsStateWithLifecycle()
+    val durationMs by viewModel.durationMs.collectAsStateWithLifecycle()
+
+    var selectedTab by remember { mutableStateOf(0) } // 0 = Library, 1 = Offline, 2 = Favorites
+    var isExpandedPlayerVisible by remember { mutableStateOf(false) }
+
+    val listToShow = when (selectedTab) {
+        0 -> allSongs
+        1 -> downloadedSongs
+        else -> favoriteSongs
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(DarkBg)
     ) {
-        items(categories.size) { index ->
-            val cat = categories[index]
-            val isSelected = selectedCategory == cat
-            
-            val contentColor by animateColorAsState(
-                targetValue = if (isSelected) DarkBackground else SlateTextSecondary,
-                label = "textColor"
-            )
-            val containerColor by animateColorAsState(
-                targetValue = if (isSelected) GoldPrimary else DarkSurface,
-                label = "containerColor"
-            )
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+        ) {
+            // Elegant Visual Header Banner (George Wassouf / Sultan Al-Tarab Theme)
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(containerColor)
-                    .clickable { onCategorySelected(cat) }
-                    .padding(horizontal = 18.dp, vertical = 10.dp)
+                    .fillMaxWidth()
+                    .height(180.dp)
             ) {
-                Text(
-                    text = cat,
-                    color = contentColor,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 14.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SongItemRow(
-    index: Int,
-    song: Song,
-    isCurrent: Boolean,
-    isPlaying: Boolean,
-    onPlayClick: () -> Unit,
-    onFavoriteClick: () -> Unit
-) {
-    val outlineColor by animateColorAsState(
-        targetValue = if (isCurrent) GoldPrimary else DividerColor,
-        label = "outline"
-    )
-    val cardBgColor by animateColorAsState(
-        targetValue = if (isCurrent) DarkSurfaceVariant else DarkSurface,
-        label = "bgColor"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(cardBgColor)
-            .clickable { onPlayClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Track number or active playing icon status
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(if (isCurrent) GoldPrimary.copy(alpha = 0.15f) else DarkSurfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isCurrent) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.VolumeUp else Icons.Default.PlayArrow,
-                    contentDescription = "Currently Played Status",
-                    tint = GoldPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            } else {
-                Text(
-                    text = index.toString(),
-                    color = SlateTextSecondary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        // Song Information column
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isCurrent) GoldPrimary else SlateTextPrimary,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(3.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "جورج وسوف",
-                    color = SlateTextSecondary,
-                    fontSize = 12.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                // Small Category Pill
+                // Header Gradient Backdrop
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(GoldPrimary.copy(alpha = 0.12f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = song.category,
-                        color = GoldPrimary,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // Action Toggles
-        IconButton(
-            onClick = onFavoriteClick,
-            modifier = Modifier.minimumInteractiveComponentSize()
-        ) {
-            Icon(
-                imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = "Favorite Toggle",
-                tint = if (song.isFavorite) Color.Red else SlateTextTertiary,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun PlayerControllerCard(
-    currentSong: Song?,
-    isPlaying: Boolean,
-    position: Long,
-    duration: Long,
-    onPlayPauseClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onPrevClick: () -> Unit,
-    onSeek: (Long) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        DarkSurfaceVariant,
-                        DarkSurface.copy(alpha = 0.95f)
-                    )
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(GoldAccent.copy(alpha = 0.25f), Color.Transparent)
+                            )
+                        )
                 )
-            )
-            .padding(16.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (currentSong != null) {
-                // Song Metadata row inside controller
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(GoldPrimary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Album,
-                            contentDescription = "Album Art",
-                            tint = GoldPrimary,
-                            modifier = Modifier.size(26.dp)
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = GoldAccent.copy(alpha = 0.15f),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        ) {
+                            Text(
+                                text = " أبو وديع ",
+                                color = GoldAccent,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            text = "سلطان الطرب",
+                            color = TextPrimary,
+                            style = MaterialTheme.typography.displayLarge,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "أغاني الأسطورة جورج وسوف كاملة مع الكلمات ودون اتصالات بالإنترنت.",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
                         )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = currentSong.title,
-                            color = SlateTextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    // Stylized Golden Vinyl Visual Art in Header
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                            .background(DarkSurfaceVariant)
+                            .border(2.dp, GoldAccent, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Decorative rotating lines inside retro vinyl
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .border(1.dp, TextSecondary.copy(alpha = 0.4f), CircleShape)
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "السلطان • جاري التشغيل بالخلفية",
-                            color = GoldPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .border(1.dp, GoldAccent.copy(alpha = 0.6f), CircleShape)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = "Music symbol",
+                            tint = GoldAccent,
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Progress SeekBar
-                val sliderValue = if (duration > 0) position.toFloat() else 0f
-                val maxLimit = if (duration > 0) duration.toFloat() else 1f
-
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { onSeek(it.toLong()) },
-                    valueRange = 0f..maxLimit,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(24.dp)
-                        .testTag("song_slider"),
-                    colors = SliderDefaults.colors(
-                        thumbColor = GoldPrimary,
-                        activeTrackColor = GoldPrimary,
-                        inactiveTrackColor = DividerColor
+            // Material 3 Custom Navigation Tabs
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Transparent,
+                contentColor = GoldAccent,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = GoldAccent
                     )
+                },
+                edgePadding = 16.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("المكتبة الموسيقية", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
+                    icon = { Icon(Icons.Default.LibraryMusic, contentDescription = "Library") }
                 )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = formatTime(position),
-                        color = SlateTextSecondary,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        text = formatTime(duration),
-                        color = SlateTextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-            } else {
-                // No item selected banner
-                Text(
-                    text = "اختر أغنية لتطرب مسامعك بأعذب الألحان",
-                    color = SlateTextSecondary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    textAlign = TextAlign.Center
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("المحملة (بدون نت)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
+                    icon = { Icon(Icons.Default.CloudDownload, contentDescription = "Offline Files") }
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text("المفضلة", fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") }
                 )
             }
 
-            // Primary control buttons row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Main Songs list
+            if (listToShow.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = when (selectedTab) {
+                                1 -> Icons.Default.DownloadForOffline
+                                2 -> Icons.Default.FavoriteBorder
+                                else -> Icons.Default.MusicOff
+                            },
+                            contentDescription = "Empty icon",
+                            tint = TextSecondary.copy(alpha = 0.4f),
+                            modifier = Modifier.size(72.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = when (selectedTab) {
+                                1 -> "لم تقم بتحميل أي أغاني بعد.\nاضغط على أيقونة التحميل لحفظ الأغاني وسماعها دون إنترنت (بدون نت)!"
+                                2 -> "لا توجد أغاني في قائمتك المفضلة حالياً."
+                                else -> "جاري تحميل قائمة الأغاني..."
+                            },
+                            textAlign = TextAlign.Center,
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("songs_list"),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(listToShow) { song ->
+                        val isCurrent = currentSong?.id == song.id
+                        SongRowItem(
+                            song = song,
+                            isCurrent = isCurrent,
+                            isPlaying = isCurrent && isPlaying,
+                            onPlayClick = {
+                                viewModel.playSong(song)
+                                Toast.makeText(context, "جاري تشغيل: ${song.arabicTitle}", Toast.LENGTH_SHORT).show()
+                            },
+                            onFavoriteClick = {
+                                viewModel.toggleFavorite(song)
+                            },
+                            onDownloadClick = {
+                                if (song.downloadStatus == "COMPLETED") {
+                                    // Option to delete
+                                    viewModel.deleteDownload(song)
+                                    Toast.makeText(context, "تم حذف الملف المحمل لتوفير مساحة.", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.downloadSong(song)
+                                    Toast.makeText(context, "بدأ تحميل أغنية: ${song.arabicTitle}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Bottom Mini Player
+            AnimatedVisibility(
+                visible = currentSong != null,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
-                IconButton(
-                    onClick = onPrevClick,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .testTag("prev_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipPrevious,
-                        contentDescription = "Previous Track",
-                        tint = if (currentSong != null) SlateTextPrimary else SlateTextTertiary,
-                        modifier = Modifier.size(28.dp)
+                currentSong?.let { song ->
+                    MiniPlayer(
+                        song = song,
+                        isPlaying = isPlaying,
+                        progress = playbackProgress,
+                        onPlayPauseClick = { viewModel.togglePlayPause() },
+                        onMiniPlayerClick = { isExpandedPlayerVisible = true }
                     )
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Big play button animation scale
-                val playButtonScale by animateFloatAsState(
-                    targetValue = if (isPlaying) 1.05f else 1f,
-                    label = "btnScale"
+        // Full Screen Aesthetic Player (Vinyl, seek bar, Arabic Lyrics)
+        AnimatedVisibility(
+            visible = isExpandedPlayerVisible,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            currentSong?.let { song ->
+                FullPlayerScreen(
+                    song = song,
+                    isPlaying = isPlaying,
+                    progress = playbackProgress,
+                    currentPositionMs = currentPositionMs,
+                    durationMs = durationMs,
+                    onCloseClick = { isExpandedPlayerVisible = false },
+                    onPlayPauseClick = { viewModel.togglePlayPause() },
+                    onSeek = { viewModel.seekTo(it) },
+                    onSkipForward = { viewModel.seekForward() },
+                    onSkipBackward = { viewModel.seekBackward() },
+                    onFavoriteToggle = { viewModel.toggleFavorite(song) }
                 )
-
-                IconButton(
-                    onClick = { if (currentSong != null) onPlayPauseClick() },
-                    modifier = Modifier
-                        .scale(playButtonScale)
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(if (currentSong != null) GoldPrimary else SlateTextTertiary)
-                        .testTag("play_button")
-                ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "Play/Pause Button",
-                        tint = DarkBackground,
-                        modifier = Modifier.size(34.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                IconButton(
-                    onClick = onNextClick,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .testTag("next_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Next Track",
-                        tint = if (currentSong != null) SlateTextPrimary else SlateTextTertiary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-fun EmptyState(query: String) {
-    Column(
+fun SongRowItem(
+    song: Song,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
+    onPlayClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onDownloadClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCurrent) DarkSurfaceVariant else DarkSurface
+        ),
         modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .fillMaxWidth()
+            .clickable { onPlayClick() }
+            .border(
+                1.dp,
+                if (isCurrent) GoldAccent.copy(alpha = 0.4f) else Color.Transparent,
+                RoundedCornerShape(12.dp)
+            )
     ) {
-        Icon(
-            imageVector = Icons.Default.QueueMusic,
-            contentDescription = "Empty music list",
-            tint = SlateTextTertiary,
-            modifier = Modifier.size(80.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = if (query.isNotEmpty()) "لم نعثر على أغنية تطابق: \"$query\"" else "لا توجد أغاني بقائمة التشغيل المحددة",
-            style = MaterialTheme.typography.titleLarge,
-            color = SlateTextPrimary,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "تأكد من كتابة أحرف الكلمة بشكل صحيح، أو أضف المزيد لقائمة songs.json لتظهر تلقائياً طرباً لا ينقطع.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = SlateTextSecondary,
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Custom Album Decorative Circle with Index or Play icon
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(DarkSurfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isPlaying) {
+                    // Active Waveform visual decoration
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = "Playing",
+                        tint = GoldAccent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play",
+                        tint = if (isCurrent) GoldAccent else TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Text Titles
+            Column(
+                modifier = Modifier.weight(1.0f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = song.arabicTitle,
+                        color = if (isCurrent) GoldAccent else TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    
+                    // Offline tag indicator (تخزين محلي)
+                    if (song.downloadStatus == "COMPLETED") {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF2E7D32).copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                text = " بدون نت ",
+                                color = Color(0xFF81C784),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = song.description,
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Action Items (Favorite Red button, Download status indicator, duration marker)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Favorite Button
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Add to favorite",
+                        tint = if (song.isFavorite) FavoriteRed else TextSecondary.copy(alpha = 0.6f)
+                    )
+                }
+
+                // Download / Storage button
+                IconButton(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    when (song.downloadStatus) {
+                        "DOWNLOADING" -> {
+                            CircularProgressIndicator(
+                                progress = { song.downloadProgress / 100f },
+                                modifier = Modifier.size(24.dp),
+                                color = GoldAccent,
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                        "COMPLETED" -> {
+                            Icon(
+                                imageVector = Icons.Default.CloudDone,
+                                contentDescription = "Downloaded successfully",
+                                tint = Color(0xFF4CAF50)
+                            )
+                        }
+                        "FAILED" -> {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "Download failed",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                imageVector = Icons.Default.DownloadForOffline,
+                                contentDescription = "Download for offline listening",
+                                tint = TextSecondary.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = song.durationText,
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+            }
+        }
     }
 }
 
-private fun formatTime(ms: Long): String {
-    if (ms <= 0) return "0:00"
-    val totalSeconds = ms / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return String.format("%d:%02d", minutes, seconds)
+@Composable
+fun MiniPlayer(
+    song: Song,
+    isPlaying: Boolean,
+    progress: Float,
+    onPlayPauseClick: () -> Unit,
+    onMiniPlayerClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        elevation = CardDefaults.cardElevation(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+            .clickable { onMiniPlayerClick() }
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // mini vinyl rotation animation decoration
+                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                val rotation by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(6000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "rotationDegrees"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .rotate(if (isPlaying) rotation else 0f)
+                        .clip(CircleShape)
+                        .background(Color.Black)
+                        .border(1.dp, GoldAccent, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(GoldAccent, CircleShape)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = song.arabicTitle,
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "جورج وسوف" + if (song.downloadStatus == "COMPLETED") " (محملة)" else " (بث مباشر)",
+                        color = GoldAccent,
+                        fontSize = 11.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play or Pause",
+                        tint = GoldAccent,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            // Simple Linear Progress Bar Indicator at base of miniplayer
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp),
+                color = GoldAccent,
+                trackColor = Color.Transparent
+            )
+        }
+    }
+}
+
+@Composable
+fun FullPlayerScreen(
+    song: Song,
+    isPlaying: Boolean,
+    progress: Float,
+    currentPositionMs: Long,
+    durationMs: Long,
+    onCloseClick: () -> Unit,
+    onPlayPauseClick: () -> Unit,
+    onSeek: (Float) -> Unit,
+    onSkipForward: () -> Unit,
+    onSkipBackward: () -> Unit,
+    onFavoriteToggle: () -> Unit
+) {
+    var selectedPlayerTab by remember { mutableStateOf(0) } // 0 = Player, 1 = Lyrics (الكلمات)
+
+    val formatTime = { ms: Long ->
+        val totalSecs = ms / 1000
+        val mins = totalSecs / 60
+        val secs = totalSecs % 60
+        String.format("%02d:%02d", mins, secs)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        DarkSurfaceVariant,
+                        DarkBg
+                    )
+                )
+            )
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onCloseClick) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Close player",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Inner player screen tab toggler (Player / Lyrics)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .padding(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (selectedPlayerTab == 0) GoldAccent else Color.Transparent)
+                            .clickable { selectedPlayerTab = 0 }
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "المشغل",
+                            color = if (selectedPlayerTab == 0) DarkBg else TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (selectedPlayerTab == 1) GoldAccent else Color.Transparent)
+                            .clickable { selectedPlayerTab = 1 }
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "الكلمات",
+                            color = if (selectedPlayerTab == 1) DarkBg else TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                IconButton(onClick = onFavoriteToggle) {
+                    Icon(
+                        imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Star favorite",
+                        tint = if (song.isFavorite) FavoriteRed else TextPrimary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (selectedPlayerTab == 0) {
+                // Tabs 1: Rotating Golden Vintage Vinyl Disk Visualizer
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "vinyl")
+                    val rotation by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(12000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "vinylRotation"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(240.dp)
+                            .rotate(if (isPlaying) rotation else 0f)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF0F0F0F),
+                                        Color(0xFF222222),
+                                        Color(0xFF111111),
+                                        Color(0xFF333333),
+                                        Color(0xFF0D0D0D)
+                                    )
+                                )
+                            )
+                            .border(4.dp, GoldAccent, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Glossy Vinyl details
+                        Box(
+                            modifier = Modifier
+                                .size(160.dp)
+                                .border(1.dp, TextSecondary.copy(alpha = 0.2f), CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .border(2.dp, GoldAccent.copy(alpha = 0.5f), CircleShape)
+                        )
+                        // Middle vintage sticker label containing musical emblem
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(GoldAccent),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QueueMusic,
+                                contentDescription = null,
+                                tint = DarkBg,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Text(
+                        text = song.arabicTitle,
+                        color = TextPrimary,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = GoldAccent.copy(alpha = 0.15f),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Text(
+                                text = " أبو وديع ",
+                                color = GoldAccent,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            text = song.title,
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // Online stream vs Offline tag
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (song.downloadStatus == "COMPLETED") {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudDone,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "مخزنة ومتاحة بدون إنترنت",
+                                color = Color(0xFF81C784),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudQueue,
+                                contentDescription = null,
+                                tint = GoldAccent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "بث مباشر (حملها لسماعها بدون نت)",
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Tab 2: Aesthetic lyrics display section (كلمات الأغنية)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "كلمات الأغنية: ${song.arabicTitle}",
+                        color = GoldAccent,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.Black.copy(alpha = 0.3f),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f)
+                            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                Text(
+                                    text = song.lyrics,
+                                    color = TextPrimary,
+                                    fontSize = 16.sp,
+                                    lineHeight = 28.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Music Seekbar Progress controls
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Slider(
+                    value = progress,
+                    onValueChange = onSeek,
+                    colors = SliderDefaults.colors(
+                        thumbColor = GoldAccent,
+                        activeTrackColor = GoldAccent,
+                        inactiveTrackColor = TextSecondary.copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = formatTime(currentPositionMs),
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = formatTime(durationMs),
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Main Play control icons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Seek Back 10s
+                IconButton(
+                    onClick = onSkipBackward,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Replay10,
+                        contentDescription = "Rewind 10 seconds",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                // Play / Pause core button with deep golden surface layout
+                FloatingActionButton(
+                    onClick = onPlayPauseClick,
+                    containerColor = GoldAccent,
+                    contentColor = DarkBg,
+                    shape = CircleShape,
+                    modifier = Modifier.size(72.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play or pause button",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                // Seek Forward 10s
+                IconButton(
+                    onClick = onSkipForward,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Forward10,
+                        contentDescription = "Forward 10 seconds",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
 }

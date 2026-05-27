@@ -1,142 +1,96 @@
 package com.example.ui.player
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.data.model.Song
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
-object AudioPlayerManager {
+class AudioPlayerManager(private val context: Context) {
+
     private var exoPlayer: ExoPlayer? = null
     
-    // UI reactive states
     private val _currentSong = MutableStateFlow<Song?>(null)
-    val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
+    val currentSong: StateFlow<Song?> = _currentSong
 
     private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+    val isPlaying: StateFlow<Boolean> = _isPlaying
 
-    private val _currentPosition = MutableStateFlow(0L)
-    val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
+    private val _playbackProgress = MutableStateFlow(0f)
+    val playbackProgress: StateFlow<Float> = _playbackProgress
 
-    private val _duration = MutableStateFlow(0L)
-    val duration: StateFlow<Long> = _duration.asStateFlow()
+    private val _currentPositionMs = MutableStateFlow(0L)
+    val currentPositionMs: StateFlow<Long> = _currentPositionMs
 
-    private val _playlist = MutableStateFlow<List<Song>>(emptyList())
-    val playlist: StateFlow<List<Song>> = _playlist.asStateFlow()
+    private val _durationMs = MutableStateFlow(0L)
+    val durationMs: StateFlow<Long> = _durationMs
 
-    private var progressJob: Job? = null
-    private val managerScope = CoroutineScope(Dispatchers.Main + Job())
+    private val playerScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var progressTrackerJob: Job? = null
 
-    fun getPlayer(context: Context): ExoPlayer {
-        if (exoPlayer == null) {
-            val cache = AudioCacheManager.getCache(context.applicationContext)
-            // Use stream-oriented, low latency default http data source
-            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-                .setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(15000)
-                .setReadTimeoutMs(15000)
-
-            val cacheDataSourceFactory = CacheDataSource.Factory()
-                .setCache(cache)
-                .setUpstreamDataSourceFactory(httpDataSourceFactory)
-                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-
-            val mediaSourceFactory = DefaultMediaSourceFactory(context.applicationContext)
-                .setDataSourceFactory(cacheDataSourceFactory)
-
-            exoPlayer = ExoPlayer.Builder(context.applicationContext)
-                .setMediaSourceFactory(mediaSourceFactory)
-                .setHandleAudioBecomingNoisy(true) // pauses playback when headphone unplugged
-                .build()
-
-            exoPlayer?.addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _isPlaying.value = isPlaying
-                    if (isPlaying) {
-                        startProgressTracker()
-                    } else {
-                        stopProgressTracker()
-                    }
-                }
-
-                override fun onPlaybackStateChanged(state: Int) {
-                    when (state) {
-                        Player.STATE_READY -> {
-                            _duration.value = exoPlayer?.duration ?: 0L
-                        }
-                        Player.STATE_ENDED -> {
-                            playNext()
-                        }
-                        else -> {}
-                    }
-                }
-
-                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                    val url = mediaItem?.requestMetadata?.mediaUri?.toString() ?: ""
-                    val matchingSong = _playlist.value.find { it.audioUrl == url }
-                    if (matchingSong != null) {
-                        _currentSong.value = matchingSong
-                    }
-                }
-            })
-        }
-        return exoPlayer!!
+    init {
+        initializePlayer()
     }
 
-    fun setPlaylist(songs: List<Song>) {
-        _playlist.value = songs
+    private fun initializePlayer() {
+        if (exoPlayer == null) {
+            exoPlayer = ExoPlayer.Builder(context).build().apply {
+                repeatMode = Player.REPEAT_MODE_OFF
+                addListener(object : Player.Listener {
+                    override fun onIsPlayingChanged(playing: Boolean) {
+                        _isPlaying.value = playing
+                        if (playing) {
+                            startProgressTracker()
+                        } else {
+                            stopProgressTracker()
+                        }
+                    }
+
+                    override fun onPlaybackStateChanged(state: Int) {
+                        when (state) {
+                            Player.STATE_READY -> {
+                                _durationMs.value = duration
+                            }
+                            Player.STATE_ENDED -> {
+                                _isPlaying.value = false
+                                _playbackProgress.value = 1.0f
+                                _currentPositionMs.value = duration
+                                stopProgressTracker()
+                            }
+                            else -> { /* idle or buffering */ }
+                        }
+                    }
+                })
+            }
+        }
     }
 
     fun playSong(song: Song) {
+        initializePlayer()
         val player = exoPlayer ?: return
+
         _currentSong.value = song
+        _playbackProgress.value = 0f
+        _currentPositionMs.value = 0L
+        _durationMs.value = 0L
 
-        val currentMediaItem = player.currentMediaItem
-        val currentUrl = currentMediaItem?.requestMetadata?.mediaUri?.toString()
-
-        if (currentUrl == song.audioUrl) {
-            if (!player.isPlaying) {
-                player.play()
-            }
-            return
+        // Determine if we should play offline file or online remote url
+        val mediaUri = if (song.downloadStatus == "COMPLETED" && song.localFilePath != null) {
+            Log.d("AudioPlayer", "Playing downloaded offline song: ${song.arabicTitle} from ${song.localFilePath}")
+            song.localFilePath
+        } else {
+            Log.d("AudioPlayer", "Playing online streaming song: ${song.arabicTitle} from ${song.remoteUrl}")
+            song.remoteUrl
         }
 
-        // Add proper media metadata for lock screen integration, system drawer
-        val metadata = MediaMetadata.Builder()
-            .setTitle(song.title)
-            .setArtist("جورج وسوف")
-            .setAlbumTitle("أبو وديع الأسطورة")
-            .build()
-
-        val mediaItem = MediaItem.Builder()
-            .setUri(song.audioUrl)
-            .setMediaMetadata(metadata)
-            .setRequestMetadata(
-                MediaItem.RequestMetadata.Builder()
-                    .setMediaUri(Uri.parse(song.audioUrl))
-                    .build()
-            )
-            .build()
-
-        player.setMediaItem(mediaItem)
+        player.setMediaItem(MediaItem.fromUri(mediaUri))
         player.prepare()
         player.play()
     }
@@ -146,53 +100,62 @@ object AudioPlayerManager {
         if (player.isPlaying) {
             player.pause()
         } else {
-            if (player.playbackState == Player.STATE_ENDED) {
-                player.seekTo(0)
-            }
             player.play()
         }
     }
 
-    fun seekTo(positionMs: Long) {
-        exoPlayer?.seekTo(positionMs)
-        _currentPosition.value = positionMs
-    }
-
-    fun playNext() {
-        val current = _currentSong.value ?: return
-        val list = _playlist.value
-        if (list.isEmpty()) return
-        val currentIndex = list.indexOfFirst { it.title == current.title }
-        if (currentIndex != -1) {
-            val nextIndex = (currentIndex + 1) % list.size
-            playSong(list[nextIndex])
+    fun seekTo(progress: Float) {
+        val player = exoPlayer ?: return
+        val duration = _durationMs.value
+        if (duration > 0) {
+            val seekPosition = (progress * duration).toLong()
+            player.seekTo(seekPosition)
+            _currentPositionMs.value = seekPosition
+            _playbackProgress.value = progress
         }
     }
 
-    fun playPrevious() {
-        val current = _currentSong.value ?: return
-        val list = _playlist.value
-        if (list.isEmpty()) return
-        val currentIndex = list.indexOfFirst { it.title == current.title }
-        if (currentIndex != -1) {
-            val prevIndex = if (currentIndex - 1 < 0) list.size - 1 else currentIndex - 1
-            playSong(list[prevIndex])
-        }
+    fun seekForward() {
+        val player = exoPlayer ?: return
+        val current = player.currentPosition
+        val target = (current + 10000).coerceAtMost(player.duration)
+        player.seekTo(target)
+    }
+
+    fun seekBackward() {
+        val player = exoPlayer ?: return
+        val current = player.currentPosition
+        val target = (current - 10000).coerceAtLeast(0)
+        player.seekTo(target)
     }
 
     private fun startProgressTracker() {
-        progressJob?.cancel()
-        progressJob = managerScope.launch {
-            while (true) {
-                _currentPosition.value = exoPlayer?.currentPosition ?: 0L
-                _duration.value = exoPlayer?.duration ?: 0L
-                delay(500) // Update twice a second for ultra-fluid SeekBar
+        stopProgressTracker()
+        progressTrackerJob = playerScope.launch {
+            while (isActive) {
+                exoPlayer?.let { player ->
+                    if (player.isPlaying) {
+                        val current = player.currentPosition
+                        val dur = player.duration.coerceAtLeast(1)
+                        _currentPositionMs.value = current
+                        _durationMs.value = dur
+                        _playbackProgress.value = current.toFloat() / dur.toFloat()
+                    }
+                }
+                delay(250)
             }
         }
     }
 
     private fun stopProgressTracker() {
-        progressJob?.cancel()
-        progressJob = null
+        progressTrackerJob?.cancel()
+        progressTrackerJob = null
+    }
+
+    fun release() {
+        stopProgressTracker()
+        playerScope.cancel()
+        exoPlayer?.release()
+        exoPlayer = null
     }
 }
