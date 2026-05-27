@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.data.model.Song
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.WassoufViewModel
@@ -79,19 +80,31 @@ fun MainScreen(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
         ) {
-            // Elegant Visual Header Banner (George Wassouf / Sultan Al-Tarab Theme)
+            // Elegant Scrapbook Collage Header Banner (George Wassouf / Sultan Al-Tarab Theme)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(190.dp)
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
             ) {
-                // Header Gradient Backdrop
+                // Vintage Newspaper Collage Image Background
+                Image(
+                    painter = painterResource(id = R.drawable.img_wassouf_collage_1779875902192),
+                    contentDescription = "Sultan Al-Tarab Scrapbook Collage",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Dark Scrim Overlay
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(GoldAccent.copy(alpha = 0.25f), Color.Transparent)
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Black.copy(alpha = 0.75f)
+                                )
                             )
                         )
                 )
@@ -106,61 +119,59 @@ fun MainScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = GoldAccent.copy(alpha = 0.15f),
-                            modifier = Modifier.padding(bottom = 6.dp)
+                            shape = RoundedCornerShape(20.dp),
+                            color = GoldAccent.copy(alpha = 0.2f),
+                            modifier = Modifier
+                                .padding(bottom = 6.dp)
+                                .border(0.5.dp, GoldAccent.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                         ) {
                             Text(
                                 text = " أبو وديع ",
                                 color = GoldAccent,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                         Text(
                             text = "سلطان الطرب",
                             color = TextPrimary,
                             style = MaterialTheme.typography.displayLarge,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Black
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "أغاني الأسطورة جورج وسوف كاملة مع الكلمات ودون اتصالات بالإنترنت.",
-                            color = TextSecondary,
+                            color = TextPrimary.copy(alpha = 0.9f),
                             fontSize = 12.sp,
-                            lineHeight = 16.sp
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Stylized Golden Vinyl Visual Art in Header
+                    // Stylized Golden Vinyl Visual Art in Header enclosing the singer's portrait
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(86.dp)
                             .clip(CircleShape)
-                            .background(DarkSurfaceVariant)
+                            .background(Color.Black)
                             .border(2.dp, GoldAccent, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Decorative rotating lines inside retro vinyl
+                        Image(
+                            painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                            contentDescription = "Portrait",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // Mini Golden Ring
                         Box(
                             modifier = Modifier
-                                .size(60.dp)
-                                .border(1.dp, TextSecondary.copy(alpha = 0.4f), CircleShape)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .border(1.dp, GoldAccent.copy(alpha = 0.6f), CircleShape)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = "Music symbol",
-                            tint = GoldAccent,
-                            modifier = Modifier.size(32.dp)
+                                .size(24.dp)
+                                .border(1.dp, GoldAccent.copy(alpha = 0.8f), CircleShape)
                         )
                     }
                 }
@@ -347,14 +358,29 @@ fun SongRowItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Custom Album Decorative Circle with Index or Play icon
+            // Custom Album Decorative Box displaying George Wassouf cover with Play status
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(54.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(DarkSurfaceVariant),
+                    .background(DarkSurfaceVariant)
+                    .border(1.dp, if (isCurrent) GoldAccent else Color.Transparent, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
+                // High visual quality portrait background
+                Image(
+                    painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                    contentDescription = "Song cover artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                // Dark translucent tint over the cover
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.45f))
+                )
+
                 if (isPlaying) {
                     // Active Waveform visual decoration
                     Icon(
@@ -367,8 +393,8 @@ fun SongRowItem(
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Play",
-                        tint = if (isCurrent) GoldAccent else TextSecondary,
-                        modifier = Modifier.size(24.dp)
+                        tint = if (isCurrent) GoldAccent else TextPrimary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -526,17 +552,26 @@ fun MiniPlayer(
 
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(46.dp)
                         .rotate(if (isPlaying) rotation else 0f)
                         .clip(CircleShape)
                         .background(Color.Black)
-                        .border(1.dp, GoldAccent, CircleShape),
+                        .border(1.5.dp, GoldAccent, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Rotating beautiful album cover inside miniplayer
+                    Image(
+                        painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                        contentDescription = "Rotating album cover",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    // Mini golden vinyl center hole
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
-                            .background(GoldAccent, CircleShape)
+                            .size(10.dp)
+                            .background(Color.Black, CircleShape)
+                            .border(1.dp, GoldAccent.copy(alpha = 0.6f), CircleShape)
                     )
                 }
 
@@ -715,17 +750,17 @@ fun FullPlayerScreen(
 
                     Box(
                         modifier = Modifier
-                            .size(240.dp)
+                            .size(260.dp)
                             .rotate(if (isPlaying) rotation else 0f)
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0xFF0F0F0F),
+                                        Color(0xFF0A0A0A),
                                         Color(0xFF222222),
-                                        Color(0xFF111111),
-                                        Color(0xFF333333),
-                                        Color(0xFF0D0D0D)
+                                        Color(0xFF151515),
+                                        Color(0xFF383838),
+                                        Color(0xFF080808)
                                     )
                                 )
                             )
@@ -735,27 +770,34 @@ fun FullPlayerScreen(
                         // Glossy Vinyl details
                         Box(
                             modifier = Modifier
-                                .size(160.dp)
-                                .border(1.dp, TextSecondary.copy(alpha = 0.2f), CircleShape)
+                                .size(200.dp)
+                                .border(1.dp, Color(0xFF333333), CircleShape)
                         )
                         Box(
                             modifier = Modifier
-                                .size(120.dp)
-                                .border(2.dp, GoldAccent.copy(alpha = 0.5f), CircleShape)
+                                .size(140.dp)
+                                .border(1.5.dp, GoldAccent.copy(alpha = 0.35f), CircleShape)
                         )
-                        // Middle vintage sticker label containing musical emblem
+                        // Middle vintage sticker label containing George's portrait
                         Box(
                             modifier = Modifier
-                                .size(64.dp)
+                                .size(96.dp)
                                 .clip(CircleShape)
-                                .background(GoldAccent),
+                                .border(2.5.dp, GoldAccent, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.QueueMusic,
-                                contentDescription = null,
-                                tint = DarkBg,
-                                modifier = Modifier.size(32.dp)
+                            Image(
+                                painter = painterResource(id = R.drawable.img_wassouf_song_cover_1779875876986),
+                                contentDescription = "George Wassouf vintage label",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Super subtle inner record holder hole
+                            Box(
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .background(Color.Black, CircleShape)
+                                    .border(1.dp, GoldAccent.copy(alpha = 0.6f), CircleShape)
                             )
                         }
                     }
