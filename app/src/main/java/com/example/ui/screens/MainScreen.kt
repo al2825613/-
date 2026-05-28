@@ -123,9 +123,11 @@ fun MainScreen(viewModel: WassoufViewModel) {
     val favoriteSongs by viewModel.favoriteSongs.collectAsState()
     val currentQuote by viewModel.currentQuote.collectAsState()
     val downloadingSongs by viewModel.downloadingSongs.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     var isPlayerExpanded by remember { mutableStateOf(false) }
     var isQuotesSheetOpen by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -155,51 +157,63 @@ fun MainScreen(viewModel: WassoufViewModel) {
                         .fillMaxWidth()
                         .background(Color.Black.copy(alpha = 0.95f))
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .padding(horizontal = 24.dp, vertical = 6.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White.copy(alpha = 0.06f))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.04f))
                             .border(
                                 width = 1.dp,
-                                brush = Brush.verticalGradient(
-                                    listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.02f))
+                                brush = Brush.horizontalGradient(
+                                    listOf(GoldenSultan.copy(alpha = 0.15f), Color.White.copy(alpha = 0.05f))
                                 ),
-                                shape = RoundedCornerShape(14.dp)
+                                shape = RoundedCornerShape(16.dp)
                             )
-                            .padding(vertical = 2.dp),
+                            .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(
                             Triple("songs", "الأغاني", Icons.Filled.MusicNote),
-                            Triple("lyrics", "الكلمات", Icons.Filled.Lyrics),
+                            Triple("favorites", "المفضلة", Icons.Filled.Favorite),
                             Triple("quotes", "ملك الطرب", Icons.Filled.InterpreterMode)
                         ).forEach { (tabId, label, icon) ->
                             val isSelected = activeTab == tabId
+                            val animScale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.15f else 1.0f,
+                                animationSpec = spring(stiffness = Spring.StiffnessLow),
+                                label = "tab_scale"
+                            )
+                            val animTint by animateColorAsState(
+                                targetValue = if (isSelected) GoldenSultan else Color.White.copy(alpha = 0.5f),
+                                animationSpec = tween(durationMillis = 300),
+                                label = "tab_tint"
+                            )
+
                             Column(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { viewModel.setActiveTab(tabId) }
-                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
                                     imageVector = icon,
                                     contentDescription = label,
-                                    tint = if (isSelected) GoldenSultan else Color.White.copy(alpha = 0.6f),
+                                    tint = animTint,
                                     modifier = Modifier
-                                        .size(18.dp)
-                                        .scale(if (isSelected) 1.05f else 1f)
+                                        .size(16.dp)
+                                        .scale(animScale)
                                 )
-                                Spacer(modifier = Modifier.height(1.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = label,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp,
-                                    color = if (isSelected) GoldenSultan else Color.White.copy(alpha = 0.6f)
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    fontSize = 8.5.sp,
+                                    color = animTint,
+                                    modifier = Modifier.scale(animScale)
                                 )
                             }
                         }
@@ -223,63 +237,141 @@ fun MainScreen(viewModel: WassoufViewModel) {
                     .padding(horizontal = 16.dp)
             ) {
                 // Interactive Custom Glass Header (Screen 1 Title)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 18.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Back Button (Acts as an elegant interface action)
-                    IconButton(
-                        onClick = {
-                            Toast.makeText(context, "أهلاً بك في فضاء جورج وسوف الغنائي الأصيل", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.08f))
-                            .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "رجوع",
-                            tint = Color.White
-                        )
-                    }
+                Crossfade(targetState = isSearchActive, label = "search_header_fade") { searchActive ->
+                    if (searchActive) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 18.dp, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Close search
+                            IconButton(
+                                onClick = {
+                                    isSearchActive = false
+                                    viewModel.setQuery("")
+                                },
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "إغلاق البحث",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-                    // Main Royal Title Header
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "جورج وسوف",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 24.sp,
-                            color = Color.White,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            text = "Songs",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
-                            color = GoldenSultan,
-                            letterSpacing = 2.sp
-                        )
-                    }
+                            // Clean, minimal search text field
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.setQuery(it) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                placeholder = {
+                                    Text(
+                                        "ابحث عن طبيب جراح، كلام الناس...",
+                                        color = Color.LightGray.copy(alpha = 0.5f),
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Search,
+                                        contentDescription = null,
+                                        tint = GoldenSultan,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { viewModel.setQuery("") }) {
+                                            Icon(
+                                                Icons.Filled.Clear,
+                                                contentDescription = "مسح",
+                                                tint = Color.LightGray,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedBorderColor = GoldenSultan,
+                                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                                    focusedContainerColor = Color.White.copy(alpha = 0.06f),
+                                    unfocusedContainerColor = Color.White.copy(alpha = 0.03f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 18.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Search Icon Button on Left
+                            IconButton(
+                                onClick = { isSearchActive = true },
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = "بحث الأغاني",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
 
-                    // Floating Menu / bio button
-                    IconButton(
-                        onClick = { isQuotesSheetOpen = true },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.08f))
-                            .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "السيرة والكلمات",
-                            tint = Color.White
-                        )
+                            // Main Royal Title Header
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "جورج وسوف",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 22.sp,
+                                    color = Color.White,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = if (activeTab == "songs") "الأغاني" else if (activeTab == "favorites") "المفضلة" else "ملك الطرب",
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 12.sp,
+                                    color = GoldenSultan,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+
+                            // Floating Menu / bio button
+                            IconButton(
+                                onClick = { isQuotesSheetOpen = true },
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = "السيرة والكلمات",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -328,12 +420,16 @@ fun MainScreen(viewModel: WassoufViewModel) {
                             onDeleteClick = { viewModel.deleteDownloadedSong(it) }
                         )
                     }
-                    "lyrics" -> {
-                        LyricsTabContent(
-                            currentSong = currentSong,
+                    "favorites" -> {
+                        FavoritesTabContent(
+                            favorites = favoriteSongs,
+                            playingSong = currentSong,
                             isPlaying = isPlaying,
-                            songs = songsList,
-                            onSongSelect = { viewModel.playSong(it) }
+                            onSongSelect = { viewModel.playSong(it) },
+                            onFavoriteToggle = { viewModel.toggleFavorite(it) },
+                            downloadingSongs = downloadingSongs,
+                            onDownloadClick = { viewModel.downloadSong(it) },
+                            onDeleteClick = { viewModel.deleteDownloadedSong(it) }
                         )
                     }
                     "quotes" -> {
@@ -447,28 +543,6 @@ fun SongsTabContent(
     var showOnlyFavorites by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Modern Premium Glassmorphic Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearch,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            placeholder = { Text("ابحث عن أغنية (كلام الناس، طبيب جراح...)", color = Color.LightGray.copy(alpha = 0.6f)) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = GoldenSultan) },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = GoldenSultan,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
-            ),
-            shape = RoundedCornerShape(16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // Luxury Switch row for viewing favorites
         Row(
@@ -1262,144 +1336,73 @@ fun MusicWaveAnimation() {
 }
 
 @Composable
-fun LyricsTabContent(
-    currentSong: Song?,
+fun FavoritesTabContent(
+    favorites: List<Song>,
+    playingSong: Song?,
     isPlaying: Boolean,
-    songs: List<Song>,
-    onSongSelect: (Song) -> Unit
+    onSongSelect: (Song) -> Unit,
+    onFavoriteToggle: (Song) -> Unit,
+    downloadingSongs: Map<Int, Float> = emptyMap(),
+    onDownloadClick: (Song) -> Unit = {},
+    onDeleteClick: (Song) -> Unit = {}
 ) {
-    if (currentSong == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = "مفصَّلاتك من روائع أبو وديع ❤️",
+            color = Color.White,
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        val targetFavs = favorites.filter { it.isFavorite }
+
+        if (targetFavs.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.04f))
-                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.LibraryMusic,
-                    contentDescription = null,
-                    tint = GoldenSultan,
-                    modifier = Modifier.size(56.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "الرجاء اختيار أغنية أولاً لعرض كلماتها.",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "اختر أغنية سريعة لبدء الاستماع:",
-                    fontSize = 11.5.sp,
-                    color = Color.LightGray.copy(alpha = 0.8f)
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-
-                LazyColumn(
-                    modifier = Modifier.height(150.dp).fillMaxWidth()
-                ) {
-                    items(songs.take(3)) { song ->
-                        Button(
-                            onClick = { onSongSelect(song) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text(song.title, color = GoldenSultan, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "كلمات: ${currentSong.title}",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 16.sp,
-                        color = GoldenSultan
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.FavoriteBorder,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.3f),
+                        modifier = Modifier.size(60.dp)
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "ألبوم ${currentSong.album} • ${currentSong.year}",
-                        fontSize = 12.sp,
-                        color = Color.LightGray
+                        text = "قائمة المفضلة فارغة حالياً.\nاضغط على رمز القلب ❤️ تحت أي أغنية لإضافتها هنا!",
+                        textAlign = TextAlign.Center,
+                        color = Color.LightGray.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
                     )
                 }
-                if (isPlaying) {
-                    MusicWaveAnimation()
-                }
             }
-
-            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Scrollable lyrics board
-            Card(
+        } else {
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .border(
-                        width = 0.5.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.12f), Color.Transparent)
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.03f)
-                ),
-                shape = RoundedCornerShape(16.dp)
+                    .testTag("favorites_list"),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    val lines = currentSong.lyrics.split("\n")
-                    items(lines) { line ->
-                        if (line.trim().isEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                        } else {
-                            Text(
-                                text = line,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                lineHeight = 26.sp,
-                                color = if (line.contains("يا ملاكي") || line.contains("طبيب جراح") || line.contains("كلام الناس") || line.contains("سلف ودين") || line.contains("صابر وراضي")) {
-                                    GoldenSultan
-                                } else {
-                                    Color.White
-                                },
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(vertical = 4.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                    }
+                items(targetFavs) { song ->
+                    val isCurrent = playingSong?.id == song.id
+                    val prog = downloadingSongs[song.id]
+                    SongItemCard(
+                        song = song,
+                        isCurrent = isCurrent,
+                        isPlaying = isCurrent && isPlaying,
+                        downloadProgress = prog,
+                        onSongSelect = { onSongSelect(song) },
+                        onFavoriteToggle = { onFavoriteToggle(song) },
+                        onDownloadClick = { onDownloadClick(song) },
+                        onDeleteClick = { onDeleteClick(song) }
+                    )
                 }
             }
         }
