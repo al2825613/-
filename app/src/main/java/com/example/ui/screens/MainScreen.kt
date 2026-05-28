@@ -155,21 +155,21 @@ fun MainScreen(viewModel: WassoufViewModel) {
                         .fillMaxWidth()
                         .background(Color.Black.copy(alpha = 0.95f))
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(horizontal = 24.dp, vertical = 6.dp)
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(Color.White.copy(alpha = 0.06f))
                             .border(
                                 width = 1.dp,
                                 brush = Brush.verticalGradient(
                                     listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.02f))
                                 ),
-                                shape = RoundedCornerShape(20.dp)
+                                shape = RoundedCornerShape(14.dp)
                             )
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 2.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -181,9 +181,9 @@ fun MainScreen(viewModel: WassoufViewModel) {
                             val isSelected = activeTab == tabId
                             Column(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .clickable { viewModel.setActiveTab(tabId) }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
@@ -191,14 +191,14 @@ fun MainScreen(viewModel: WassoufViewModel) {
                                     contentDescription = label,
                                     tint = if (isSelected) GoldenSultan else Color.White.copy(alpha = 0.6f),
                                     modifier = Modifier
-                                        .size(24.dp)
-                                        .scale(if (isSelected) 1.15f else 1f)
+                                        .size(18.dp)
+                                        .scale(if (isSelected) 1.05f else 1f)
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(1.dp))
                                 Text(
                                     text = label,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
+                                    fontSize = 9.sp,
                                     color = if (isSelected) GoldenSultan else Color.White.copy(alpha = 0.6f)
                                 )
                             }
@@ -1129,11 +1129,11 @@ fun MiniPlayer(
             .fillMaxWidth()
             .clickable { onExpandClick() }
             .testTag("mini_player"),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF070B12).copy(alpha = 0.95f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column {
             // Seek progress bar
@@ -1141,7 +1141,7 @@ fun MiniPlayer(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.5.dp),
+                    .height(1.8.dp),
                 color = GoldenSultan,
                 trackColor = Color.White.copy(alpha = 0.1f)
             )
@@ -1149,7 +1149,7 @@ fun MiniPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Spinning vinyl mini artwork
@@ -1166,7 +1166,7 @@ fun MiniPlayer(
 
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
                         .border(0.5.dp, GoldenSultan, CircleShape)
                         .rotate(if (isPlaying) spinDegree else 0f)
@@ -1179,27 +1179,27 @@ fun MiniPlayer(
                     )
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
                             .background(Color.Black)
                             .align(Alignment.Center)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = song.title,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "${song.album} • $currentPositionStr / $durationStr",
-                        fontSize = 11.5.sp,
+                        fontSize = 10.sp,
                         color = Color.LightGray.copy(alpha = 0.8f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -1208,11 +1208,11 @@ fun MiniPlayer(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.08f))
                             .clickable { onPlayPauseToggle() },
@@ -1222,16 +1222,9 @@ fun MiniPlayer(
                             imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             contentDescription = "تشغيل/توقيف",
                             tint = GoldenSultan,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    Icon(
-                        Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "عرض المشغل",
-                        tint = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.size(22.dp)
-                    )
                 }
             }
         }

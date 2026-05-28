@@ -287,7 +287,7 @@ class MusicService : Service() {
         // Optional rounded image corner post-production
         val artBitmap = albumArt ?: BitmapFactory.decodeResource(resources, R.drawable.img_wassouf_fallback)
         if (artBitmap != null) {
-            val roundedArt = getRoundedCornerBitmap(artBitmap, 16)
+            val roundedArt = getRoundedCornerBitmap(artBitmap, 6)
             expandedView.setImageViewBitmap(R.id.notification_album_art, roundedArt)
         }
 
