@@ -14,7 +14,7 @@
         android:src="@drawable/img_wassouf_fallback" />
 
     <!-- 2. Dark Overlay with Premium Transparency to make text and controls pop -->
-    <View
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#A6000000" />
@@ -27,7 +27,7 @@
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:layout_marginStart="8dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:background="@android:color/transparent"
         android:src="@drawable/ic_heart_outlined"
         android:scaleType="fitCenter"
         android:padding="11dp"
@@ -42,7 +42,7 @@
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
         android:layout_marginEnd="8dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:background="@android:color/transparent"
         android:src="@drawable/ic_close_white"
         android:scaleType="fitCenter"
         android:padding="13dp"
@@ -105,7 +105,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_marginEnd="12dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:background="@android:color/transparent"
                 android:src="@drawable/ic_prev_white"
                 android:scaleType="fitCenter"
                 android:padding="8dp"
@@ -116,7 +116,7 @@
                 android:id="@+id/notification_play_pause"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:background="@android:color/transparent"
                 android:src="@drawable/ic_play_white"
                 android:scaleType="fitCenter"
                 android:padding="6dp" />
@@ -127,7 +127,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_marginStart="12dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:background="@android:color/transparent"
                 android:src="@drawable/ic_next_white"
                 android:scaleType="fitCenter"
                 android:padding="8dp"

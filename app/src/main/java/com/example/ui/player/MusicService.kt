@@ -284,25 +284,29 @@ class MusicService : Service() {
         val favRes = if (isFavorite) R.drawable.ic_heart_filled else R.drawable.ic_heart_outlined
         expandedView.setImageViewResource(R.id.notification_favorite, favRes)
 
-        // Spotify style blurred and rounded full-bleed cover background!
+        // Spotify style blurred full-bleed cover background!
         val artBitmap = albumArt ?: BitmapFactory.decodeResource(resources, R.drawable.img_wassouf_fallback)
         if (artBitmap != null) {
             try {
                 // Scale bitmap down to make standard StackBlur incredibly high-performance and smooth
-                val scaledWidth = 140
-                val scaledHeight = (artBitmap.height * (scaledWidth.toFloat() / artBitmap.width.toFloat())).toInt().coerceAtLeast(140)
+                val scaledWidth = 120
+                val scaledHeight = if (artBitmap.width > 0) {
+                    (artBitmap.height * (scaledWidth.toFloat() / artBitmap.width.toFloat())).toInt().coerceAtLeast(120)
+                } else {
+                    120
+                }
                 val scaledBitmap = Bitmap.createScaledBitmap(artBitmap, scaledWidth, scaledHeight, true)
                 
                 // Active Spotify-style focus blur of radius 8
                 val blurred = blurBitmap(scaledBitmap, 8)
-                
-                // Add soft modern rounded notification corners (using 10 as modern system roundness)
-                val roundedBlurred = getRoundedCornerBitmap(blurred, 10)
-                expandedView.setImageViewBitmap(R.id.notification_album_art, roundedBlurred)
-            } catch (e: Exception) {
-                Log.e("MusicService", "Error blurring art bitmap: ${e.message}")
-                val roundedArt = getRoundedCornerBitmap(artBitmap, 10)
-                expandedView.setImageViewBitmap(R.id.notification_album_art, roundedArt)
+                expandedView.setImageViewBitmap(R.id.notification_album_art, blurred)
+            } catch (t: Throwable) {
+                Log.e("MusicService", "Error blurring/setting art bitmap: ${t.message}")
+                try {
+                    expandedView.setImageViewBitmap(R.id.notification_album_art, artBitmap)
+                } catch (t2: Throwable) {
+                    expandedView.setImageViewResource(R.id.notification_album_art, R.drawable.img_wassouf_fallback)
+                }
             }
         }
 
