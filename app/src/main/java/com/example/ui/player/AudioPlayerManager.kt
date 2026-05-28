@@ -25,11 +25,7 @@ class AudioPlayerManager(private val context: Context) {
     var onNextCallback: (() -> Unit)? = null
     var onPreviousCallback: (() -> Unit)? = null
 
-    private val playerContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        context.createAttributionContext("audiotag")
-    } else {
-        context
-    }
+    private val playerContext = context
 
     private var mediaPlayer: MediaPlayer? = null
     
@@ -495,6 +491,12 @@ class AudioPlayerManager(private val context: Context) {
         playerScope.cancel()
     }
 
+    fun updateCurrentSongFavorite(isFav: Boolean) {
+        val song = _currentSong.value ?: return
+        _currentSong.value = song.copy(isFavorite = isFav)
+        updateNotification()
+    }
+
     private fun updateNotification() {
         val song = _currentSong.value ?: return
         val isPlayingValue = _isPlaying.value
@@ -505,6 +507,7 @@ class AudioPlayerManager(private val context: Context) {
                 putExtra(MusicService.EXTRA_ALBUM_TITLE, song.album)
                 putExtra(MusicService.EXTRA_IS_PLAYING, isPlayingValue)
                 putExtra(MusicService.EXTRA_IMAGE_URL, song.imageUrl)
+                putExtra(MusicService.EXTRA_IS_FAVORITE, song.isFavorite)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

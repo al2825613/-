@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:id="@+id/notification_layout"
+    android:background="#0C101B"
+    android:padding="6dp">
+
+    <!-- Small rounded/circular ImageView for album art -->
+    <ImageView
+        android:id="@+id/notification_album_art"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/img_wassouf_fallback" />
+
+    <!-- Close button on the extreme right -->
+    <ImageButton
+        android:id="@+id/notification_close"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="6dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_close_white"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:contentDescription="X" />
+
+    <!-- Button Row for controls ⏮️ ▶️ ⏭️ ❤️ -->
+    <LinearLayout
+        android:id="@+id/notification_controls_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@id/notification_close"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="6dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Favorite ❤️ button -->
+        <ImageButton
+            android:id="@+id/notification_favorite"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_heart_outlined"
+            android:scaleType="fitCenter"
+            android:padding="8dp" />
+
+        <!-- Previous ⏮️ button -->
+        <ImageButton
+            android:id="@+id/notification_prev"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_prev_white"
+            android:scaleType="fitCenter"
+            android:padding="8dp" />
+
+        <!-- Play/Pause ▶️⏸️ button -->
+        <ImageButton
+            android:id="@+id/notification_play_pause"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_play_white"
+            android:scaleType="fitCenter"
+            android:padding="6dp" />
+
+        <!-- Next ⏭️ button -->
+        <ImageButton
+            android:id="@+id/notification_next"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_next_white"
+            android:scaleType="fitCenter"
+            android:padding="8dp" />
+
+    </LinearLayout>
+
+    <!-- Text Metadata section: Title and subtitle -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/notification_album_art"
+        android:layout_toStartOf="@id/notification_controls_layout"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="6dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/notification_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="اسم الأغنية"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/notification_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="جورج وسوف"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+</RelativeLayout>

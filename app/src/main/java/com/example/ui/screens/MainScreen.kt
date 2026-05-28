@@ -794,7 +794,6 @@ fun SongItemCard(
     }
 }
 
-// Gorgeous Full Screen Player (Screen 2) Custom Component
 @Composable
 fun FullScreenPlayer(
     song: Song,
@@ -810,7 +809,6 @@ fun FullScreenPlayer(
     onToggleFavorite: () -> Unit,
     onTogglePlaybackMode: () -> Unit
 ) {
-    // Continuous spinning calculation for visual depth representation
     val spinningDisc = remember { Animatable(0f) }
 
     LaunchedEffect(isPlaying) {
@@ -830,26 +828,24 @@ fun FullScreenPlayer(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF030508)) // Dark AMOLED Black Glass depth background
+            .background(Color(0xFF070B14)) // Slate Dark Spotify-like background
             .testTag("full_player")
     ) {
-        // Shifting Aurora glowing RGB circle backdrop layer behind control controls
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val cx = size.width / 2
-            val cy = size.height * 0.45f
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFF0B192C), Color.Transparent),
-                    center = Offset(cx, cy),
-                    radius = size.width * 0.9f
-                )
-            )
-        }
+        // atmospheric song art blur background:
+        AsyncImage(
+            model = song.getLocalOrFallbackImage(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(50.dp),
+            contentScale = ContentScale.Crop,
+            alpha = 0.22f
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 20.dp)
                 .windowInsetsPadding(WindowInsets.safeDrawing),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -858,57 +854,57 @@ fun FullScreenPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = onClose,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.08f))
                 ) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "تصغير", tint = Color.White)
+                    Icon(Icons.Filled.Close, contentDescription = "إغلاق", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
 
                 Text(
                     text = "جِلْسَةُ الطَّرَبِ تَعْمَلُ أَنْ",
                     color = GoldenSultan,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.sp
                 )
 
                 IconButton(
                     onClick = onToggleFavorite,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.08f))
                 ) {
                     Icon(
                         imageVector = if (song.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = "إعجاب",
-                        tint = if (song.isFavorite) Color.Red else Color.White
+                        tint = if (song.isFavorite) Color.Red else Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            // Cinematic large circular George Wassouf image inside Neon Progress indicator rings
+            // Cinematic circular George Wassouf image inside Neon Progress indicator rings (Slightly smaller, 210dp)
             Box(
                 modifier = Modifier
-                    .size(285.dp)
+                    .size(210.dp)
                     .align(Alignment.CenterHorizontally),
                 contentAlignment = Alignment.Center
             ) {
                 val progressFraction = if (duration > 0) currentPosition.toFloat() / duration else 0f
                 val sweepAngle = progressFraction * 360f
 
-                // Screen 2: Neon progress custom canvas arcs drawn directly around the circle image
-                Canvas(modifier = Modifier.size(280.dp)) {
-                    val strokeBgWidth = 5.dp.toPx()
-                    val strokeNeonWidth = 6.dp.toPx()
+                Canvas(modifier = Modifier.size(206.dp)) {
+                    val strokeBgWidth = 3.5.dp.toPx()
+                    val strokeNeonWidth = 4.dp.toPx()
 
                     // Background track progress ring
                     drawArc(
@@ -921,20 +917,11 @@ fun FullScreenPlayer(
 
                     // Neon Progress ring 1: Deep wide glow (Faint cyan)
                     drawArc(
-                        color = NeonCyan.copy(alpha = 0.12f),
+                        color = NeonCyan.copy(alpha = 0.1f),
                         startAngle = -90f,
                         sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = Stroke(width = 24.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // Neon Progress ring 2: Focus light secondary (Semi-transparent cyan)
-                    drawArc(
-                        color = NeonCyan.copy(alpha = 0.35f),
-                        startAngle = -90f,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
+                        style = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
                     )
 
                     // Neon Progress ring 3: Foreground sharp cyan color line
@@ -954,25 +941,19 @@ fun FullScreenPlayer(
                         val dotY = (r * Math.sin(angleRad)).toFloat() + r
                         drawCircle(
                             color = GoldenSultan,
-                            radius = 6.dp.toPx(),
-                            center = Offset(dotX, dotY)
-                        )
-                        // Outer dot flare
-                        drawCircle(
-                            color = LightAmber.copy(alpha = 0.5f),
-                            radius = 12.dp.toPx(),
+                            radius = 4.dp.toPx(),
                             center = Offset(dotX, dotY)
                         )
                     }
                 }
 
-                // George Wassouf circular centerpiece inside neon progress tracker
+                // George Wassouf circular centerpiece (Slightly smaller, 166dp)
                 Box(
                     modifier = Modifier
-                        .size(228.dp)
+                        .size(166.dp)
                         .clip(CircleShape)
-                        .border(3.dp, Color(0xFF030508), CircleShape)
-                        .border(4.dp, GoldenSultan.copy(alpha = 0.8f), CircleShape)
+                        .border(2.dp, Color(0xFF030508), CircleShape)
+                        .border(3.dp, GoldenSultan.copy(alpha = 0.8f), CircleShape)
                         .graphicsLayer { rotationZ = spinningDisc.value }
                 ) {
                     AsyncImage(
@@ -985,44 +966,44 @@ fun FullScreenPlayer(
                     // Classic vinyl circular reflections & golden center core label
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(Color.Black)
-                            .border(1.5.dp, GoldenSultan, CircleShape)
+                            .border(1.2.dp, GoldenSultan, CircleShape)
                             .align(Alignment.Center)
                     )
                 }
             }
 
-            // Song Metadata block
+            // Song Metadata block (Smaller text sizes)
             Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = song.title,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "${song.album} • ${song.year}",
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     color = Color.LightGray.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Streaming Offline Switch capsule
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(Color.White.copy(alpha = 0.05f))
                         .clickable { onTogglePlaybackMode() }
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -1030,18 +1011,18 @@ fun FullScreenPlayer(
                         imageVector = if (playbackMode == AudioPlayerManager.PlaybackMode.STREAM) Icons.Filled.Stream else Icons.Filled.AudioFile,
                         contentDescription = null,
                         tint = GoldenSultan,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(13.dp)
                     )
                     Text(
                         text = if (playbackMode == AudioPlayerManager.PlaybackMode.STREAM) "جودة استوديو (أونلاين)" else "صوت محلي معزز (بدون انترنت)",
-                        fontSize = 10.5.sp,
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
             }
 
-            // Slider progress bar and music duration on both sides
+            // Slider progress bar (Smaller padding)
             Column(modifier = Modifier.fillMaxWidth()) {
                 Slider(
                     value = currentPosition.toFloat(),
@@ -1058,43 +1039,31 @@ fun FullScreenPlayer(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Music duration on both sides explicitly
-                    Text(formatTime(currentPosition), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text(formatTime(duration), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(formatTime(currentPosition), color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(formatTime(duration), color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            // Control Buttons Row with RGB Glowing Lighting underneath
+            // Control Buttons Row (Clean minimized controls)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 30.dp),
+                    .padding(bottom = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Subtle RGB glowing background blur under controls
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(80.dp)
-                        .blur(50.dp)
-                        .background(
-                            Brush.horizontalGradient(listOf(NeonCyan.copy(alpha = 0.25f), GoldenSultan.copy(alpha = 0.2f), NeonBlueGlow.copy(alpha = 0.25f)))
-                        )
-                )
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Previous Song
+                    // Previous Song (Sized 44dp)
                     IconButton(
                         onClick = onPrevious,
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.05f))
                     ) {
@@ -1102,15 +1071,14 @@ fun FullScreenPlayer(
                             imageVector = Icons.Filled.SkipPrevious,
                             contentDescription = "السابق",
                             tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
-                    // Floating Play/Pause with custom gold-tinted glow
+                    // Floating Play/Pause (Sized 60dp)
                     Box(
                         modifier = Modifier
-                            .size(76.dp)
-                            .shadow(20.dp, CircleShape, spotColor = GoldenSultan)
+                            .size(60.dp)
                             .clip(CircleShape)
                             .background(Color.White)
                             .clickable { onPlayPause() },
@@ -1120,15 +1088,15 @@ fun FullScreenPlayer(
                             imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             contentDescription = "تشغيل أو إيقاف مؤقت",
                             tint = Color.Black,
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
 
-                    // Next Song
+                    // Next Song (Sized 44dp)
                     IconButton(
                         onClick = onNext,
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.05f))
                     ) {
@@ -1136,7 +1104,7 @@ fun FullScreenPlayer(
                             imageVector = Icons.Filled.SkipNext,
                             contentDescription = "التالي",
                             tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }

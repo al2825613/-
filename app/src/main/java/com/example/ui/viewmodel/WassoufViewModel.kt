@@ -122,6 +122,10 @@ class WassoufViewModel(application: Application) : AndroidViewModel(application)
     fun toggleFavorite(song: Song) {
         viewModelScope.launch {
             repository.toggleFavorite(song.id, song.isFavorite)
+            val playingNow = playerManager.currentSong.value
+            if (playingNow != null && playingNow.id == song.id) {
+                playerManager.updateCurrentSongFavorite(!song.isFavorite)
+            }
         }
     }
 
