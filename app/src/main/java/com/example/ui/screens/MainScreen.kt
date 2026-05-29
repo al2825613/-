@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import android.widget.Toast
+import android.content.Intent
 import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.Song
@@ -46,6 +47,14 @@ import com.example.ui.player.AudioPlayerManager
 import com.example.ui.viewmodel.WassoufViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.launch
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 // Smoothly drifting radial colors simulating high-luxury organic lights
 @Composable
@@ -129,6 +138,13 @@ fun MainScreen(viewModel: WassoufViewModel) {
     var isQuotesSheetOpen by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    var isSettingsDropdownExpanded by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var showRateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -231,174 +247,126 @@ fun MainScreen(viewModel: WassoufViewModel) {
             MovingAmbientBackdrop()
 
             // Main Contents
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
+            AnimatedVisibility(
+                visible = !isSearchActive,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                // Interactive Custom Glass Header (Screen 1 Title)
-                Crossfade(targetState = isSearchActive, label = "search_header_fade") { searchActive ->
-                    if (searchActive) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 18.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Close search
-                            IconButton(
-                                onClick = {
-                                    isSearchActive = false
-                                    viewModel.setQuery("")
-                                },
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.08f))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "إغلاق البحث",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            // Clean, minimal search text field
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.setQuery(it) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
-                                placeholder = {
-                                    Text(
-                                        "ابحث عن طبيب جراح، كلام الناس...",
-                                        color = Color.LightGray.copy(alpha = 0.5f),
-                                        fontSize = 12.sp
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Filled.Search,
-                                        contentDescription = null,
-                                        tint = GoldenSultan,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setQuery("") }) {
-                                            Icon(
-                                                Icons.Filled.Clear,
-                                                contentDescription = "مسح",
-                                                tint = Color.LightGray,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-                                },
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = GoldenSultan,
-                                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                                    focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                                    unfocusedContainerColor = Color.White.copy(alpha = 0.03f)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 18.dp, bottom = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Search Icon Button on Left
-                            IconButton(
-                                onClick = { isSearchActive = true },
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.08f))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Search,
-                                    contentDescription = "بحث الأغاني",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            // Main Royal Title Header
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "جورج وسوف",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 22.sp,
-                                    color = Color.White,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = if (activeTab == "songs") "الأغاني" else if (activeTab == "favorites") "المفضلة" else "ملك الطرب",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 12.sp,
-                                    color = GoldenSultan,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-
-                            // Floating Menu / bio button
-                            IconButton(
-                                onClick = { isQuotesSheetOpen = true },
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.08f))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.MoreVert,
-                                    contentDescription = "السيرة والكلمات",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Arabic Welcome Subtitle Text
-                Card(
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                // Modern Premium Glassmorphic Header Bar with Symmetrical Actions
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .border(
-                            width = 0.5.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(Color.White.copy(alpha = 0.12f), Color.Transparent)
-                            ),
-                            shape = RoundedCornerShape(14.dp)
-                        ),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f))
+                        .padding(top = 18.dp, bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "أهلي ومرحباً بكم مع قيصر الطرب وأجمل التسجيلات الصوتية الحية",
-                        color = GoldenDust,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
+                    // Symmetrical Search Button on Left
+                    IconButton(
+                        onClick = { isSearchActive = true },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "بحث الأغاني",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // Symmetrical Premium Centered Title
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "جورج وسوف",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
+                            color = Color.White,
+                            letterSpacing = 0.5.sp
+                        )
+                        Text(
+                            text = if (activeTab == "songs") "الأغاني" else if (activeTab == "favorites") "المفضلة" else "ملك الطرب",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = GoldenSultan,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    // Symmetrical Floating ⋮ Options Menu Button on Right
+                    Box {
+                        IconButton(
+                            onClick = { isSettingsDropdownExpanded = true },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.08f))
+                                .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "قائمة الخيارات",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = isSettingsDropdownExpanded,
+                            onDismissRequest = { isSettingsDropdownExpanded = false },
+                            modifier = Modifier
+                                .background(Color(0xFF0F1524))
+                                .border(1.dp, GoldenSultan.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+                        ) {
+                            val options = listOf(
+                                Triple("settings", "الإعدادات ⚙️", Icons.Filled.Settings),
+                                Triple("about", "عن التطبيق ℹ️", Icons.Filled.Info),
+                                Triple("privacy", "سياسة الخصوصية 🔒", Icons.Filled.Security),
+                                Triple("share", "مشاركة التطبيق 🔗", Icons.Filled.Share),
+                                Triple("rate", "تقييم التطبيق ⭐", Icons.Filled.Star),
+                                Triple("update", "التحقق من التحديثات 🔄", Icons.Filled.Refresh)
+                            )
+                            options.forEach { (id, label, icon) ->
+                                DropdownMenuItem(
+                                    text = { Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp) },
+                                    leadingIcon = { Icon(icon, contentDescription = null, tint = GoldenSultan, modifier = Modifier.size(18.dp)) },
+                                    onClick = {
+                                        isSettingsDropdownExpanded = false
+                                        when (id) {
+                                            "settings" -> showSettingsDialog = true
+                                            "about" -> showAboutDialog = true
+                                            "privacy" -> showPrivacyDialog = true
+                                            "share" -> {
+                                                val shareIntent = Intent().apply {
+                                                    action = Intent.ACTION_SEND
+                                                    putExtra(Intent.EXTRA_TEXT, "استمع الآن إلى روائع مدرسة الفن غناء قيصر وسلطان الطرب جورج وسوف - تطبيق روائع أبو وديع المطور: https://ais-pre-abpw5oljedwdeuiaulfnt3-628211424812.europe-west2.run.app")
+                                                    type = "text/plain"
+                                                }
+                                                context.startActivity(Intent.createChooser(shareIntent, "مشاركة التطبيق"))
+                                            }
+                                            "rate" -> showRateDialog = true
+                                            "update" -> showUpdateDialog = true
+                                        }
+                                    }
+                                )
+                            }
+                            
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                            
+                            DropdownMenuItem(
+                                text = { Text("إصدار التطبيق: v1.0.4", color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                                onClick = { isSettingsDropdownExpanded = false },
+                                enabled = false
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -440,6 +408,7 @@ fun MainScreen(viewModel: WassoufViewModel) {
                     }
                 }
             }
+            }
 
             // Exquisite Full Screen Music Player Overlay (Screen 2)
             AnimatedVisibility(
@@ -470,6 +439,477 @@ fun MainScreen(viewModel: WassoufViewModel) {
                         onToggleFavorite = { viewModel.toggleFavorite(currentSong!!) },
                         onTogglePlaybackMode = { viewModel.togglePlaybackMode() }
                     )
+                }
+            }
+
+            // ==================== Premium Full Screen Search Overlay ====================
+            AnimatedVisibility(
+                visible = isSearchActive,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            ) {
+                FullSearchOverlay(
+                    searchQuery = searchQuery,
+                    onQueryChange = { viewModel.setQuery(it) },
+                    songsResult = songsList,
+                    playingSong = currentSong,
+                    isPlaying = isPlaying,
+                    downloadingSongs = downloadingSongs,
+                    onClose = { isSearchActive = false; viewModel.setQuery("") },
+                    onSongSelect = { viewModel.playSong(it); isSearchActive = false },
+                    onFavoriteToggle = { viewModel.toggleFavorite(it) },
+                    onDownloadClick = { viewModel.downloadSong(it) },
+                    onDeleteClick = { viewModel.deleteDownloadedSong(it) }
+                )
+            }
+
+            // ==================== Real Settings Dialogs ====================
+
+            // 1. About Dialog
+            if (showAboutDialog) {
+                Dialog(onDismissRequest = { showAboutDialog = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .border(1.5.dp, GoldenSultan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1524)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = null,
+                                tint = GoldenSultan,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "روائع أبو وديع المطور 🎵",
+                                color = GoldenSultan,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "الإصدار الحالي: v1.0.4",
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 12.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "تم تصميم هذا التطبيق بصورة مستوحاة من عظمة مدرسة الطرب العربي الأصيل 'سلطان الطرب جورج وسوف'. يهدف إلى تقديم تجربة سماع مريحة وفورية خالية من الضجيج ومصممة بتقنيات صوتية عالية الدقة.\n\nالمطور: فريق مبرمجي وعشاق أبو وديع © 2026.",
+                                color = Color.LightGray.copy(alpha = 0.9f),
+                                fontSize = 13.sp,
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { showAboutDialog = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GoldenSultan),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("إغلاق", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Settings Dialog
+            if (showSettingsDialog) {
+                var isHiFiEnabled by remember { mutableStateOf(true) }
+                var cacheLimit by remember { mutableStateOf("250MB") }
+                Dialog(onDismissRequest = { showSettingsDialog = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .border(1.5.dp, GoldenSultan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1524)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Settings,
+                                    contentDescription = null,
+                                    tint = GoldenSultan,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "إعدادات التطبيق ⚙️",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 17.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Experience mode toggle
+                            Text("وضع تشغيل الصوتيات", color = GoldenSultan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .clickable { viewModel.togglePlaybackMode() }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("محاكي الصوت المطور 🎹", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(
+                                        text = if (playbackMode == AudioPlayerManager.PlaybackMode.SYNTH) "مفعّل (تشغيل تركيبي)" else "غير مفعّل (بث سحابي)",
+                                        color = Color.Gray,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Switch(
+                                    checked = playbackMode == AudioPlayerManager.PlaybackMode.SYNTH,
+                                    onCheckedChange = { viewModel.togglePlaybackMode() },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GoldenSultan,
+                                        checkedTrackColor = GoldenSultan.copy(alpha = 0.3f)
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // HiFi toggle
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .clickable { isHiFiEnabled = !isHiFiEnabled }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("صوت فائق الدقة (Hi-Fi) ✨", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("تحسين عمق تدرج موجات الصوت الحية", color = Color.Gray, fontSize = 11.sp)
+                                }
+                                Switch(
+                                    checked = isHiFiEnabled,
+                                    onCheckedChange = { isHiFiEnabled = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GoldenSultan,
+                                        checkedTrackColor = GoldenSultan.copy(alpha = 0.3f)
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Cache limit dropdown simulacrum
+                            Text("الحد الأقصى للتخزين المؤقت", color = GoldenSultan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("100MB", "250MB", "مفتوح ♾️").forEach { limit ->
+                                    val isSel = cacheLimit == limit || (limit == "مفتوح ♾️" && cacheLimit == "Unlimited")
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(if (isSel) GoldenSultan.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f))
+                                            .border(1.dp, if (isSel) GoldenSultan else Color.Transparent, RoundedCornerShape(10.dp))
+                                            .clickable { cacheLimit = limit }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(limit, color = if (isSel) GoldenSultan else Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { showSettingsDialog = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GoldenSultan),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("حفظ وإغلاق 💾", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Privacy Policy Dialog
+            if (showPrivacyDialog) {
+                Dialog(onDismissRequest = { showPrivacyDialog = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .border(1.5.dp, GoldenSultan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1524)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Security,
+                                contentDescription = null,
+                                tint = GoldenSultan,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "سياسة الخصوصية الأوفلاين 🔒",
+                                color = GoldenSultan,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 17.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "لأننا نقدّر خصوصيتك وأمانك بشكل كامل، نؤكد أن هذا التطبيق لا يقوم بجمع، تخزين، تتبع، أو مشاركة أي معلومات شخصية أو بيانات استخدام خاصة بك مع أي جهة خارجية أو خوادم تحليلية.\n\nتُخزن جميع الملفات الصوتية والأغاني التي تقوم بتحميلها بشكل محلي تماماً داخل الذاكرة التخزينية المعزولة لجهازك الخاص والمحمية بموجب نظام أندرويد لتعمل بالكامل أوفلاين دون الحاجة لأي اتصال.",
+                                color = Color.LightGray,
+                                fontSize = 13.sp,
+                                lineHeight = 21.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { showPrivacyDialog = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GoldenSultan),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("فهمت وموافق", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. Rate App Dialog
+            if (showRateDialog) {
+                var selectedRating by remember { mutableIntStateOf(0) }
+                Dialog(onDismissRequest = { showRateDialog = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .border(1.5.dp, GoldenSultan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1524)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = GoldenSultan,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "تقييم تطبيق روائع أبو وديع ⭐",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "رأيك يهمنا لمواصلة تطوير وتحديث روائع الطرب الأصيل. عبّر عن حبك لفن جورج وسوف!",
+                                color = Color.LightGray,
+                                fontSize = 12.5.sp,
+                                lineHeight = 18.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Interactive Stars row
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                (1..5).forEach { starIndex ->
+                                    val isStarSelected = starIndex <= selectedRating
+                                    Icon(
+                                        imageVector = if (isStarSelected) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                        contentDescription = "نجمة $starIndex",
+                                        tint = if (isStarSelected) GoldenSultan else Color.Gray.copy(alpha = 0.6f),
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clickable { selectedRating = starIndex }
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = when (selectedRating) {
+                                    1 -> "برأيك يحتاج إلى تحسين؟ سنسعى للأفضل!"
+                                    2 -> "شكراً لملاحظتك، نعمل على التحديثات باستمرار."
+                                    3 -> "رائع! يسعدنا تقديم مستويات ممتعة دائماً."
+                                    4 -> "ممتاز جداً! شكراً لتقديرك روائع الطرب الأصيل."
+                                    5 -> "أبو وديع يستاهل كل الحب! شكراً لك ❤️"
+                                    else -> "اضغط على النجوم لتسجيل تقييمك"
+                                },
+                                color = if (selectedRating > 0) GoldenSultan else Color.Gray,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.5.sp,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = { showRateDialog = false },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(46.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("تراجع", color = Color.White, fontWeight = FontWeight.Medium)
+                                }
+                                Button(
+                                    onClick = {
+                                        showRateDialog = false
+                                        if (selectedRating > 0) {
+                                            Toast.makeText(context, "شكراً جزيلاً لتقييمك بـ $selectedRating نجمة! تم تسجيل رأيك بنجاح.", Toast.LENGTH_LONG).show()
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .height(46.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = GoldenSultan),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("إرسال التقييم", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5. Check for Updates Dialog
+            if (showUpdateDialog) {
+                var isChecking by remember { mutableStateOf(true) }
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(1200)
+                    isChecking = false
+                }
+                Dialog(onDismissRequest = { showUpdateDialog = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .border(1.5.dp, GoldenSultan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1524)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = null,
+                                tint = GoldenSultan,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "تحديثات التطبيق 🔄",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (isChecking) {
+                                CircularProgressIndicator(color = GoldenSultan, modifier = Modifier.size(32.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "جاري البحث عن تحديثات جديدة خالية من الأخطاء...",
+                                    color = Color.LightGray,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2ECC71),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "أنت تستخدم النسخة الأحدث والآمنة حالياً!\nإصدار التطبيق الحالي: v1.0.4",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 18.sp
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Button(
+                                    onClick = { showUpdateDialog = false },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = GoldenSultan),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("رائع وموافق", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -540,63 +980,7 @@ fun SongsTabContent(
     onDownloadClick: (Song) -> Unit = {},
     onDeleteClick: (Song) -> Unit = {}
 ) {
-    var showOnlyFavorites by remember { mutableStateOf(false) }
-
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // Luxury Switch row for viewing favorites
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color.White.copy(alpha = 0.04f))
-                .border(
-                    width = 0.5.dp,
-                    color = Color.White.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .clickable { showOnlyFavorites = !showOnlyFavorites }
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.06f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (showOnlyFavorites) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = null,
-                        tint = GoldenSultan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "عرض الأغاني المفضلة فقط",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-            Switch(
-                checked = showOnlyFavorites,
-                onCheckedChange = { showOnlyFavorites = it },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = GoldenSultan,
-                    checkedTrackColor = GoldenSultan.copy(alpha = 0.35f),
-                    uncheckedThumbColor = Color.Gray,
-                    uncheckedTrackColor = Color.White.copy(alpha = 0.1f)
-                ),
-                modifier = Modifier.scale(0.85f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
 
         // Curator section headline
         Text(
@@ -607,14 +991,7 @@ fun SongsTabContent(
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // Filter lists strictly
-        val displaySongs = if (showOnlyFavorites) {
-            songs.filter { it.isFavorite }
-        } else {
-            songs
-        }
-
-        if (displaySongs.isEmpty()) {
+        if (songs.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -630,7 +1007,7 @@ fun SongsTabContent(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = if (showOnlyFavorites) "لا توجد أغانٍ في قائمة المفضلة حتى الآن.\nاضغط على رمز القلب تحت أي أغنية لإضافتها!" else "لم نجد أي أغنية مطابقة لبحثك.",
+                        text = "لم نجد أي أغنية مطابقة لبحثك.",
                         textAlign = TextAlign.Center,
                         color = Color.LightGray.copy(alpha = 0.8f),
                         fontSize = 13.sp,
@@ -648,7 +1025,7 @@ fun SongsTabContent(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                items(displaySongs) { song ->
+                items(songs) { song ->
                     val isCurrent = playingSong?.id == song.id
                     val prog = downloadingSongs[song.id]
                     SongItemCard(
@@ -1508,3 +1885,247 @@ private fun formatTime(seconds: Int): String {
     val secs = seconds % 60
     return String.format("%d:%02d", mins, secs)
 }
+
+@Composable
+fun FullSearchOverlay(
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
+    songsResult: List<Song>,
+    playingSong: Song?,
+    isPlaying: Boolean,
+    downloadingSongs: Map<Int, Float>,
+    onClose: () -> Unit,
+    onSongSelect: (Song) -> Unit,
+    onFavoriteToggle: (Song) -> Unit,
+    onDownloadClick: (Song) -> Unit,
+    onDeleteClick: (Song) -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF070B12).copy(alpha = 0.99f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp)
+        ) {
+            // Header Search Input Row with Back arrow and text field
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "رجوع",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .focusRequester(focusRequester),
+                    placeholder = {
+                        Text(
+                            "بحث تفاعلي عن الأغاني والمواويل...",
+                            color = Color.LightGray.copy(alpha = 0.5f),
+                            fontSize = 14.sp
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = GoldenSultan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onQueryChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Clear,
+                                    contentDescription = "مسح",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = GoldenSultan,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                        focusedContainerColor = Color.White.copy(alpha = 0.08f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.04f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
+
+            // Divider
+            HorizontalDivider(color = Color.White.copy(alpha = 0.08f), modifier = Modifier.padding(bottom = 12.dp))
+
+            // Suggestions OR Results
+            if (searchQuery.isEmpty()) {
+                // Show gorgeous interactive recommendation grid
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = "اقتراحات البحث وشائعة الآن 🔥",
+                        color = GoldenSultan,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
+                    )
+
+                    val popularSuggestions = listOf(
+                        "كلام الناس",
+                        "طبيب جراح",
+                        "الهوى سلطان",
+                        "سلف ودين",
+                        "صابر وراضي",
+                        "خسرت كل الناس",
+                        "لسه الدنيا بخير",
+                        "حلف القمر",
+                        "دبنا ع الغياب",
+                        "قدك المياس",
+                        "يوم الوداع",
+                        "روحي يا نسمة"
+                    )
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(popularSuggestions) { suggestion ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onQueryChange(suggestion) },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+                                border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.MusicNote,
+                                        contentDescription = null,
+                                        tint = GoldenSultan.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = suggestion,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Show Sorted Instant Results
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = "النتائج المطابقة 🎵",
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (songsResult.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(56.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "لم نعثر على نتائج لـ \"$searchQuery\"",
+                                    color = Color.LightGray.copy(alpha = 0.7f),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 24.dp)
+                        ) {
+                            items(songsResult) { song ->
+                                val isCurrent = playingSong?.id == song.id
+                                val prog = downloadingSongs[song.id]
+                                SongItemCard(
+                                    song = song,
+                                    isCurrent = isCurrent,
+                                    isPlaying = isCurrent && isPlaying,
+                                    downloadProgress = prog,
+                                    onSongSelect = {
+                                        onSongSelect(song)
+                                    },
+                                    onFavoriteToggle = { onFavoriteToggle(song) },
+                                    onDownloadClick = { onDownloadClick(song) },
+                                    onDeleteClick = { onDeleteClick(song) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
