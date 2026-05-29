@@ -1903,7 +1903,10 @@ fun FullSearchOverlay(
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        try {
+            kotlinx.coroutines.delay(200)
+            focusRequester.requestFocus()
+        } catch (e: Exception) {}
     }
 
     Box(

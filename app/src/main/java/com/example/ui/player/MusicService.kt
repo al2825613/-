@@ -64,10 +64,6 @@ class MusicService : Service() {
         const val EXTRA_IS_FAVORITE = "extra_is_favorite"
     }
 
-    override fun getAttributionTag(): String? {
-        return "wassouf_attribution"
-    }
-
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -151,7 +147,7 @@ class MusicService : Service() {
             ACTION_STOP -> {
                 AudioPlayerManager.instance?.stop()
                 try {
-                    stopForeground(true)
+                    stopForeground(STOP_FOREGROUND_REMOVE)
                 } catch (e: Exception) {
                     Log.e("MusicService", "Error stopping foreground: ${e.message}")
                 }
@@ -196,6 +192,7 @@ class MusicService : Service() {
         }
 
         // Build base notification immediately to start foreground safely
+        // Do NOT process blur on main thread. Pass null for blurred bitmap.
         try {
             val initialNotification = buildNotification(songTitle, albumTitle, isPlaying, isFavorite, null)
             
@@ -219,17 +216,38 @@ class MusicService : Service() {
             }
         }
 
-        // Asynchronously load custom album art if available
-        if (imageUrl.isNotEmpty()) {
-            serviceScope.launch {
-                val bitmap = loadAlbumArt(imageUrl)
-                if (bitmap != null) {
-                    try {
-                        val updatedNotification = buildNotification(songTitle, albumTitle, isPlaying, isFavorite, bitmap)
-                        notificationManager?.notify(NOTIFICATION_ID, updatedNotification)
-                    } catch (e: Exception) {
-                        Log.e("MusicService", "Failed to notify updated notification: ${e.message}")
+        // Asynchronously blur and load custom or fallback album art
+        serviceScope.launch(Dispatchers.Default) {
+            var blurredBitmap: Bitmap? = null
+            try {
+                var bitmapToBlur: Bitmap? = if (imageUrl.isNotEmpty()) {
+                    loadAlbumArt(imageUrl)
+                } else null
+                
+                if (bitmapToBlur == null) {
+                    bitmapToBlur = BitmapFactory.decodeResource(resources, R.drawable.img_wassouf_fallback)
+                }
+
+                if (bitmapToBlur != null) {
+                    val scaledWidth = 120
+                    val scaledHeight = if (bitmapToBlur.width > 0) {
+                        (bitmapToBlur.height * (scaledWidth.toFloat() / bitmapToBlur.width.toFloat())).toInt().coerceAtLeast(80)
+                    } else {
+                        120
                     }
+                    val scaledBitmap = Bitmap.createScaledBitmap(bitmapToBlur, scaledWidth, scaledHeight, true)
+                    blurredBitmap = blurBitmap(scaledBitmap, 12)
+                }
+            } catch (e: Exception) {
+                Log.e("MusicService", "Async blur failed: ${e.message}")
+            }
+
+            if (blurredBitmap != null) {
+                try {
+                    val updatedNotification = buildNotification(songTitle, albumTitle, isPlaying, isFavorite, blurredBitmap)
+                    notificationManager?.notify(NOTIFICATION_ID, updatedNotification)
+                } catch (e: Exception) {
+                    Log.e("MusicService", "Failed to notify updated notification: ${e.message}")
                 }
             }
         }
@@ -240,7 +258,7 @@ class MusicService : Service() {
         albumTitle: String,
         isPlaying: Boolean,
         isFavorite: Boolean,
-        albumArt: Bitmap?
+        blurredAlbumArt: Bitmap?
     ): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -285,29 +303,10 @@ class MusicService : Service() {
         expandedView.setImageViewResource(R.id.notification_favorite, favRes)
 
         // Spotify style blurred full-bleed cover background!
-        val artBitmap = albumArt ?: BitmapFactory.decodeResource(resources, R.drawable.img_wassouf_fallback)
-        if (artBitmap != null) {
-            try {
-                // Scale bitmap down to make standard StackBlur incredibly high-performance and smooth
-                val scaledWidth = 120
-                val scaledHeight = if (artBitmap.width > 0) {
-                    (artBitmap.height * (scaledWidth.toFloat() / artBitmap.width.toFloat())).toInt().coerceAtLeast(120)
-                } else {
-                    120
-                }
-                val scaledBitmap = Bitmap.createScaledBitmap(artBitmap, scaledWidth, scaledHeight, true)
-                
-                // Active Spotify-style focus blur of radius 8
-                val blurred = blurBitmap(scaledBitmap, 8)
-                expandedView.setImageViewBitmap(R.id.notification_album_art, blurred)
-            } catch (t: Throwable) {
-                Log.e("MusicService", "Error blurring/setting art bitmap: ${t.message}")
-                try {
-                    expandedView.setImageViewBitmap(R.id.notification_album_art, artBitmap)
-                } catch (t2: Throwable) {
-                    expandedView.setImageViewResource(R.id.notification_album_art, R.drawable.img_wassouf_fallback)
-                }
-            }
+        if (blurredAlbumArt != null) {
+            expandedView.setImageViewBitmap(R.id.notification_album_art, blurredAlbumArt)
+        } else {
+            expandedView.setImageViewResource(R.id.notification_album_art, R.drawable.img_wassouf_fallback)
         }
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)

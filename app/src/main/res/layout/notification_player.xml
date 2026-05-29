@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
+    android:layout_height="112dp"
     android:id="@+id/notification_layout"
     android:background="#0A0F1D">
 
@@ -17,12 +17,12 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#A6000000" />
+        android:background="#B3000000" />
 
     <!-- 3. Symmetrical Favorite ❤️ Button on the FAR LEFT -->
     <ImageButton
         android:id="@+id/notification_favorite"
-        android:layout_width="42dp"
+        android:layout_width="48dp"
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
@@ -30,14 +30,14 @@
         android:background="@android:color/transparent"
         android:src="@drawable/ic_heart_outlined"
         android:scaleType="fitCenter"
-        android:padding="11dp"
+        android:padding="12dp"
         android:alpha="0.85"
         android:contentDescription="Favorite" />
 
     <!-- 4. Symmetrical Close ✖️ Button on the FAR RIGHT -->
     <ImageButton
         android:id="@+id/notification_close"
-        android:layout_width="42dp"
+        android:layout_width="48dp"
         android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
@@ -45,7 +45,7 @@
         android:background="@android:color/transparent"
         android:src="@drawable/ic_close_white"
         android:scaleType="fitCenter"
-        android:padding="13dp"
+        android:padding="14dp"
         android:alpha="0.85"
         android:contentDescription="Close" />
 
@@ -72,7 +72,7 @@
                 android:layout_height="wrap_content"
                 android:text="اسم الأغنية"
                 android:textColor="#FFFFFF"
-                android:textSize="11.5sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:ellipsize="end" />
@@ -83,10 +83,10 @@
                 android:layout_height="wrap_content"
                 android:text="جورج وسوف"
                 android:textColor="#CCCCCC"
-                android:textSize="9.5sp"
+                android:textSize="12.5sp"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:layout_marginTop="1dp" />
+                android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
@@ -97,40 +97,40 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="8dp">
 
             <!-- Previous ⏮️ button -->
             <ImageButton
                 android:id="@+id/notification_prev"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginEnd="12dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="16dp"
                 android:background="@android:color/transparent"
                 android:src="@drawable/ic_prev_white"
                 android:scaleType="fitCenter"
-                android:padding="8dp"
+                android:padding="10dp"
                 android:alpha="0.9" />
 
             <!-- Play/Pause ▶️/⏸️ button (largest button centered) -->
             <ImageButton
                 android:id="@+id/notification_play_pause"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:background="@android:color/transparent"
                 android:src="@drawable/ic_play_white"
                 android:scaleType="fitCenter"
-                android:padding="6dp" />
+                android:padding="8dp" />
 
             <!-- Next ⏭️ button -->
             <ImageButton
                 android:id="@+id/notification_next"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="12dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
                 android:background="@android:color/transparent"
                 android:src="@drawable/ic_next_white"
                 android:scaleType="fitCenter"
-                android:padding="8dp"
+                android:padding="10dp"
                 android:alpha="0.9" />
 
         </LinearLayout>

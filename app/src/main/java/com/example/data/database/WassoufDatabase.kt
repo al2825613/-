@@ -21,7 +21,7 @@ abstract class WassoufDatabase : RoomDatabase() {
                     WassoufDatabase::class.java,
                     "wassouf_database"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(true)
                 .build()
                 INSTANCE = instance
                 instance
